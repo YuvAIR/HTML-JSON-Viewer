@@ -54,5 +54,5 @@ static JSONViewer.getNodePath(node);
 ```
 
 ## CDNs:
- - `<script src="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@latest/src/jsonviewer.min.js"></script>`
- - `<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@latest/src/jsonviewer.min.css">`
+ - `<script src="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@main/src/jsonviewer.min.js"></script>`
+ - `<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@main/src/jsonviewer.min.css">`
