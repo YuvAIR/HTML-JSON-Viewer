@@ -98,7 +98,7 @@ class JSONViewer {
         if (first) {
             current_node.classList.add("json-tree-viewer-container");
 
-            if (Object.keys(data).length == 1) {
+            if (Object.keys(data).length == 1 && typeof data[Object.keys(data)[0]] == "object") {
                 var key = Object.keys(data)[0];
 
                 current_node.innerHTML = "";
