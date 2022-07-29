@@ -50,6 +50,9 @@ class JSONViewer {
         
         var jsonThis = this;
         this.#container.on("click", ".nodeKey", function() {
+            if (!nodeClickCallback) {
+                return;
+            }
             var node = $(this).parent().parent();
             var path = JSONViewer.getNodePath(node);
             var name = name = path[path.length-1];
