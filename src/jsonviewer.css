@@ -1,0 +1,176 @@
+/* JSON Viewer */
+
+/* Dark: */
+:root {
+    --jsonviewer-main-color: #ffffff;
+    --jsonviewer-link-color: #86bcff;
+    --jsonviewer-border-color: #cccccc;
+    --jsonviewer-background-color: #202b38;
+    --jsonviewer-arrow: 1;
+    --jsonviewer-arrow-hover: 0.825;
+}
+
+@media (prefers-color-scheme: light) {
+    /* Light: */
+    :root {
+        --jsonviewer-main-color: #000000;
+        --jsonviewer-link-color: #2669bb;
+        --jsonviewer-border-color: #828282;
+        --jsonviewer-background-color: #fafafa;
+        --jsonviewer-arrow: 0;
+        --jsonviewer-arrow-hover: 0.175;
+    }
+}
+
+
+
+.json-tree-viewer-container {
+    font-family: 'Roboto Mono', monospace;
+    position: relative;
+    margin-top: 40px;
+
+    background-color: var(--jsonviewer-background-color);
+    color: var(--jsonviewer-main-color);
+    border-radius: 20px;
+    border: 1px solid;
+    padding-right: 30px;
+    padding-bottom: 20px;
+    padding-top: 10px;
+    max-height: 100%;
+    overflow-y: auto;
+
+    flex-grow: 1;
+}
+
+.json-tree-viewer-container::-webkit-scrollbar-track {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    background: transparent;
+}
+.json-tree-viewer-container::-webkit-scrollbar {
+    width: 20px;
+}
+.json-tree-viewer-container::-webkit-scrollbar-thumb {
+    border: 7px solid rgba(0, 0, 0, 0);
+    background-clip: padding-box;
+    border-radius: 99999999px;
+}
+
+.json-tree-viewer-container .node {
+    margin-left: 40px;
+    margin-top: 10px;
+    position: relative;
+}
+
+.json-tree-viewer-container .root > .node {
+    margin-left: 0;
+}
+
+.json-tree-viewer-container .nodeBody {
+    display: flex;
+    align-items: center;
+}
+
+.json-tree-viewer-container .nodeKey {
+    border-radius: 5px;
+    padding: 4px;
+    padding-left: 7px;
+    padding-right: 7px;
+    margin: 0px;
+    margin-right: 5px;
+    min-width: max-content;
+}
+.json-tree-viewer-container .nodeKey:hover {
+    text-decoration: underline;
+    cursor: pointer;
+    border: 1px solid var(--jsonviewer-border-color);
+    margin: -1px;
+    margin-right: 4px;
+    color: var(--jsonviewer-link-color);
+}
+
+.json-tree-viewer-container .lastNodeKey::after {
+    content: ":";
+    text-decoration: none;
+    color: var(--jsonviewer-main-color);
+    display: inline-block
+}
+
+.json-tree-viewer-container .arrow {
+    width: 18px;
+    height: 18px;
+    object-fit: none;
+    border-radius: 100%;
+    transition: transform 0.1s ease;
+    filter: invert(var(--jsonviewer-arrow));
+    user-select: none;
+}
+
+.json-tree-viewer-container .arrow:hover {
+    filter: invert(var(--jsonviewer-arrow-hover));
+    cursor: pointer;
+}
+
+.json-tree-viewer-container .arrow:active {
+    background-color: rgb(107, 107, 107);
+}
+
+
+.json-tree-viewer-container .arrowDiv {
+    display: flex;
+    align-items: center;
+}
+.json-tree-viewer-container .arrowDiv::after {
+    content: "";
+    height: 1px;
+    width: 20px;
+    background: var(--jsonviewer-main-color);
+}
+
+.json-tree-viewer-container .lastArrowDiv::before {
+    margin-left: 9px;
+    content: "";
+    height: 1px;
+    width: 9px;
+    background: var(--jsonviewer-main-color);
+}
+
+
+.json-tree-viewer-container .hidden .node, .json-tree-viewer-container .hidden .verticalLine {
+    display: none;
+}
+
+.json-tree-viewer-container :not(.hidden) > div > div > .arrow {
+    transform: rotate(90deg);
+}
+
+
+.json-tree-viewer-container span:not(.nodeValue), .json-tree-viewer-container .arrowDiv, .json-tree-viewer-container .verticalLine {
+    opacity: 0.7;
+}
+
+
+.json-tree-viewer-container .verticalLine {
+    width: 1px;
+    background: var(--jsonviewer-main-color);
+    margin: 0px;
+    position: absolute;
+}
+
+
+
+.json-tree-viewer-container .string::before, .json-tree-viewer-container .string::after {
+    content: "\"";
+}
+
+
+
+.json-tree-viewer-container .page-link {
+    font-size: 20px;
+    transition: transform 0.1s ease;
+    margin-top: 7px;
+}
+.json-tree-viewer-container .page-link:hover {
+    transform: scale(1.1);
+    text-decoration: none;
+}

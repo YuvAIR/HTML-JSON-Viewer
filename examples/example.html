@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+        <script src="../src/jsonviewer.js"></script>
+        <link rel="stylesheet" href="../src/jsonviewer.css">
+    </head>
+    <body>
+        <div id="container"></div>
+        <script>
+            var jsonviewer = new JSONViewer({"example": {"abc": {"a": 1, "b":2, "c":3}, 345: "test"}}, document.getElementById("container"), console.log);
+
+            setTimeout(() => {
+                jsonviewer.updateTree({"example2": {"abc": {"x": 10, "y":8, "z":5}, 543: "test2"}});
+            }, 3000);
+        </script>
+    </body>
+</html>
