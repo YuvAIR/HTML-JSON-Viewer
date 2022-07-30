@@ -17,6 +17,7 @@ class JSONViewer {
     #shown;
     #container;
     #data;
+    #options;
     static #arrow_right = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAGxJREFUSEtjZKAxYKSx+QyjFhAM4ZEVRA4MDAwHCIYJmgJSgmg/AwNDI6mWkGqBKQMDgw8plpBqASiYvpJiCTkWgEKZaEsGpQVEux7kVVJ9QPNIpmkypXlGIzUTg9WTEgejFpAVAgQ1Df04AABMSBYZWnttmAAAAABJRU5ErkJggg==";
     static #play_circle = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAXpJREFUSEu1lX9RxEAMhd854ByAAkDBgQLAATjAAXdSUAAoAAmgAE4BoADmY5JOSH+knU73z+5uvpeXNLvSwmu1cHyNBRxKOpZ0YoJeJb1J+qgEVoBLSXchcI4HaCfpsQ/UBziQ9CDpzJQS4EUSAVlkwh4CyIy9K0lfGdQFIPizBUHdtrCBfbIEfp4hXQDUbCSdBsWV1WRCxtwF0qwM8INjlGeoZ4JVTU0yIHocA+D3hRW05XM4yP0fy/7vcwTQiu8WJPsOgLrQljdmRZdtnsWRt3AEuD14iJc5AwC+sABQzsaFNDZFgNPXAxcjlOBA4j9AB35GF+YAviVdTwFMsehe0u1Ui8YUeW+qc43cusEic6jVZnbTxwIBqjb1UdJqUz4s/qMBmTMqnkxk76hgg1YDwpTEEsbG0HLfeR+w8p+FQ+Oa/mboURcf1wRhAfe6MLpRTsuOGtdRLTVBIQG7FkD2Jz84ORgtjNL4ZJLZ7CezsL/ert7kOkJx4hdvXWgZmZakXgAAAABJRU5ErkJggg==";
 
@@ -36,19 +37,34 @@ class JSONViewer {
      * @param {HTMLElement} nodeElement - node DOM element on the tree
      */
     /**
+     * @typedef {Object} JSONViewerOptions
+     * @property {onNodeClick} nodeClickCallback - callback function to be called when a node (key) is clicked
+     * @property {string} maxKeyWidth - max width of a key node (css string), overflow will be hidden. default: "100%"
+     * @property {string} maxValueWidth - max width of a value node (css string), overflow will craete a new line. default: "100%"
+     */
+    /**
      * @param {Object|string} data - Object / JSON string to be displayed
      * @param {HTMLElement} container - DOM element to display the tree in
-     * @param {onNodeClick} nodeClickCallback - callback function to be called when a node (key) is clicked
+     * @param {JSONViewerOptions} options
      */
-    constructor(data, container, nodeClickCallback) {
+    constructor(data, container, options) {
         data = typeof data === "string" ? JSON.parse(data) : data;
         this.#verticalLines = [];
         this.#topVerticalLines = [];
         this.#shown = [];
         this.#container = $(container);
         this.#data = data;
+        this.#options = options ? options : {};
+
+        if (options.maxKeyWidth) {
+            this.#container.css("--jsonviewer-max-key-width", options.maxKeyWidth);
+        }
+        if (options.maxValueWidth) {
+            this.#container.css("--jsonviewer-max-value-width", options.maxValueWidth);
+        }
         
         var jsonThis = this;
+        var nodeClickCallback = options.nodeClickCallback;
         this.#container.on("click", ".nodeKey", function() {
             if (!nodeClickCallback) {
                 return;

@@ -40,6 +40,10 @@
     overflow-y: auto;
 
     flex-grow: 1;
+
+
+    --jsonviewer-max-key-width: 100%;
+    --jsonviewer-max-value-width: 100%;
 }
 
 .json-tree-viewer-container::-webkit-scrollbar-track {
@@ -79,6 +83,8 @@
     margin: 0px;
     margin-right: 5px;
     min-width: max-content;
+    max-width: var(--jsonviewer-max-key-width);
+    overflow: hidden;
 }
 .json-tree-viewer-container .nodeKey:hover {
     text-decoration: underline;
@@ -87,6 +93,13 @@
     margin: -1px;
     margin-right: 4px;
     color: var(--jsonviewer-link-color);
+}
+
+
+.json-tree-viewer-container .nodeValue {
+    max-width: var(--jsonviewer-max-value-width);
+    word-wrap: break-word;
+    white-space: initial;
 }
 
 .json-tree-viewer-container .lastNodeKey::after {

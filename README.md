@@ -13,17 +13,23 @@
  * @param {HTMLElement} nodeElement - node DOM element on the tree
  */
 /**
+ * @typedef {Object} JSONViewerOptions
+ * @property {onNodeClick} nodeClickCallback - callback function to be called when a node (key) is clicked
+ * @property {string} maxKeyWidth - max width of a key node (css string), overflow will be hidden. default: "100%"
+ * @property {string} maxValueWidth - max width of a value node (css string), overflow will craete a new line. default: "100%"
+ */
+/**
  * @param {Object|string} data - Object / JSON string to be displayed
  * @param {HTMLElement} container - DOM element to display the tree in
- * @param {onNodeClick} nodeClickCallback - callback function to be called when a node (key) is clicked
+ * @param {JSONViewerOptions} options
  */
-class JSONViewer(data, container, nodeClickCallback); // Constructor
+class JSONViewer(data, container, options);
 
 /**
  * Update the tree using new data
  * @param {Object|string} data 
  */
-JSONViewer.updateTree(data)
+JSONViewer.updateTree(data);
 
 /**
  * Get the path of the node in the tree as an array
