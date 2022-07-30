@@ -7,6 +7,9 @@ window.onload = function() {
         r.css('--jsonviewer-main-color', '#000000');
         r.css('--jsonviewer-link-color', '#2669bb');
         r.css('--jsonviewer-border-color', '#828282');
+        r.css('--jsonviewer-background-color', '#fafafa');
+        r.css('--jsonviewer-arrow', '0');
+        r.css('--jsonviewer-arrow-hover', '0.175');
     }
 };
 
