@@ -82,9 +82,10 @@
     padding-right: 7px;
     margin: 0px;
     margin-right: 5px;
-    min-width: max-content;
+    /* min-width: max-content; */
     max-width: var(--jsonviewer-max-key-width);
     overflow: hidden;
+    white-space: nowrap;
 }
 .json-tree-viewer-container .nodeKey:hover {
     text-decoration: underline;
