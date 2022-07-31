@@ -22,10 +22,21 @@ $(document).on("keydown", ".json-viewer-container", function (e) {
         var search = $(this).find(".json-viewer-search")[0];
         search.style.display = "block";
         search.getElementsByTagName("input")[0].focus();
-        // var height = search.getBoundingClientRect().height;
-        // search.nextElementSibling.style.marginTop = -(height + 14) + "px";
     }
 })
+
+$(document).on("keydown", ".json-viewer-container .json-viewer-search input", function (e) {
+    if (!e.ctrlKey && !e.shiftKey && e.key === "Enter") {
+        e.preventDefault();
+        e.target.parentElement.getElementsByClassName("json-viewer-filter-button")[0].click();
+    }
+});
+
+$(document).on("keydown", ".json-viewer-container .json-viewer-search", function (e) {
+    if (!e.ctrlKey && !e.shiftKey && e.key === "Escape") {
+        e.target.parentElement.getElementsByClassName("json-viewer-close-search")[0].click();
+    }
+});
 
 
 class JSONViewer {
@@ -79,7 +90,7 @@ class JSONViewer {
         this.#container.addClass("json-viewer-container");
         this.#container.attr("tabindex", "0");
 
-        var search = $("<div class='json-viewer-search' style='display: none;'></div>");
+        var search = $("<div class='json-viewer-search' style='display: none;' tabindex='0'></div>");
         var closeButton = $("<button class='json-viewer-close-search'>&times;</button>");
         closeButton[0].addEventListener("click", (e) => {
             e.target.parentElement.style.display = "none";
@@ -121,20 +132,78 @@ class JSONViewer {
         });
         
         this.#container.on("click", ".arrow", function() {
-            $(this).attr("src", $(this).attr("src") == JSONViewer.#play_circle ? JSONViewer.#arrow_right : JSONViewer.#play_circle);
-            $(this).parent().parent().parent().toggleClass("hidden");
-            if ($(this).attr("src") == JSONViewer.#arrow_right) {
-                jsonThis.#shown.push(JSONViewer.getNodePath($(this).parent().parent().parent()).join("/"));
-            } else {
-                jsonThis.#shown.splice(jsonThis.#shown.indexOf(JSONViewer.getNodePath($(this).parent().parent().parent())), 1);
-            }
-            jsonThis.#updateLines();
+            jsonThis.expandCollapse(JSONViewer.getNodePath($(this).parent().parent().parent()));
         });
 
         var treeContainer = $("<div class='json-viewer-tree-container'></div>");
         this.#container.append(treeContainer);
         this.#createTree(data, treeContainer);
     }
+
+
+    /**
+     * Check if the node at the given path is expanded.
+     */
+    isExpanded(path) {
+        return this.#shown.indexOf(path) != -1;
+    }
+    /**
+     * Expands or collapses the node at the given path (expands if collapsed, collapses if expanded)
+     * @param {string[]} path
+     */
+     expandCollapse(path) {
+        var node = this.#container.find(".node[data-path='" + path.join("/") + "']");
+        if (node.length == 0) {
+            return;
+        }
+        node.find(".arrow").first().attr("src", node.attr("src") == JSONViewer.#play_circle ? JSONViewer.#arrow_right : JSONViewer.#play_circle);
+        node.toggleClass("hidden");
+        if (node.attr("src") == JSONViewer.#arrow_right) {
+            this.#shown.push(path);
+        } else {
+            this.#shown.splice(this.#shown.indexOf(JSONViewer.getNodePath(node)), 1);
+        }
+        this.#updateLines();
+    }
+    /**
+     * Expand the node at the given path.
+     * @param {string[]} path
+     */
+    expand(path) {
+        if (this.isExpanded(path)) {
+            return;
+        }
+        this.expandCollapse(path);
+    }
+    /**
+     * Collapse the node at the given path.
+     * @param {string[]} path
+     */
+    collapse(path) {
+        if (!this.isExpanded(path)) {
+            return;
+        }
+        this.expandCollapse(path);
+    }
+    /**
+     * Expand all nodes.
+     */
+    expandAll() {
+        var jsonThis = this;
+        this.#container.find(".node").each(function() {
+            jsonThis.expand(JSONViewer.getNodePath($(this)));
+        });
+    }
+    /**
+     * Collapse all nodes.
+     */
+    collapseAll() {
+        var jsonThis = this;
+        this.#container.find(".node").each(function() {
+            jsonThis.collapse(JSONViewer.getNodePath($(this)));
+        });
+    }
+
 
     /**
      * Filters the tree to show only nodes at a given depth which match the query.
@@ -149,9 +218,15 @@ class JSONViewer {
 
         var nodes = this.#container.find(".json-viewer-tree-container .nodeKey, .json-viewer-tree-container .nodeValue");
         for (const node of nodes) {
-            var text = node.innerHTML;
+            var og_text = node.innerHTML;
             var regex = new RegExp(`(${q})`, 'ig');
-            text = text.replace(regex, '<span class="highlight">$1</span>');
+            var text = og_text.replace(regex, '<span class="highlight">$1</span>');
+            if (text != og_text) {
+                var path = JSONViewer.getNodePath(node.parentElement.parentElement);
+                for (var i = 0; i < path.length; i++) {
+                    this.expand(path.slice(0, i + 1));
+                }
+            }
             node.innerHTML = text;
         }
     }
@@ -193,7 +268,7 @@ class JSONViewer {
      * @param {Object} data
      * @param {HTMLElement} container
      */
-    #createTree(data, current_node, first=true) {
+    #createTree(data, current_node, first=true, path=[]) {
         current_node = $(current_node)[0];
         if (first) {
             current_node.parentElement.focus();
@@ -204,6 +279,7 @@ class JSONViewer {
                 var node = document.createElement("div");
                 node.classList.add("node");
                 node.classList.add("root");
+                node.dataset.path = path.join("/") + "/" + key;
                 node.dataset.key = JSON.stringify(key);
 
                     var nodeBody = document.createElement("div");
@@ -223,6 +299,7 @@ class JSONViewer {
                 current_node = node;
                 first = false;
                 data = data[key];
+                path.push(key);
             }
         }
 
@@ -230,6 +307,7 @@ class JSONViewer {
         for (var key in data) {
             var node = document.createElement("div");
             node.classList.add("node");
+            node.dataset.path = path.join("/") + "/" + key;
             node.dataset.key = JSON.stringify(key);
 
                 var nodeBody = document.createElement("div");
@@ -261,7 +339,7 @@ class JSONViewer {
             !isHidden && (arrow.src = JSONViewer.#arrow_right);
 
             if (typeof data[key] === "object") {
-                this.#createTree(data[key], node, false);
+                this.#createTree(data[key], node, false, path.concat([key]));
             } else {
                 arrow.remove();
                 arrowDiv.classList.add("lastArrowDiv")
@@ -293,14 +371,7 @@ class JSONViewer {
      * @returns {string[]} - ["path", "to", "node"] => data[path][to][nodeName] == nodeValue
      */
     static getNodePath(node) {
-        node = $(node)
-        var currPath = [];
-        while (node.length > 0 && !node.hasClass("json-viewer-tree-container")) {
-            currPath.push(JSON.parse(node.attr("data-key")));
-            node = node.parent();
-        }
-        var res = currPath.reverse();
-        return res;
+        return $(node).attr("data-path").split("/");
     }
 
     static #linkify(text) {

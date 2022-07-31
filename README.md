@@ -45,6 +45,39 @@ static JSONViewer.getNodePath(node);
  * @param {number} depth
  */
 JSONViewer.query(q="", depth=0);
+
+/**
+ * Check if the node at the given path is expanded.
+ */
+JSONViewer.isExpanded(path);
+
+/**
+ * Expands or collapses the node at the given path (expands if collapsed, collapses if expanded)
+ * @param {string[]} path
+ */
+JSONViewer.expandCollapse(path);
+
+/**
+ * Expand the node at the given path.
+ * @param {string[]} path
+ */
+JSONViewer.expand(path);
+
+/**
+ * Collapse the node at the given path.
+ * @param {string[]} path
+ */
+JSONViewer.collapse(path);
+
+/**
+ * Expand all nodes.
+ */
+JSONViewer.expandAll();
+
+/**
+ * Collapse all nodes.
+ */
+JSONViewer.collapseAll();
 ```
 ## Example:
 ```html
@@ -53,19 +86,23 @@ JSONViewer.query(q="", depth=0);
     <head>
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
-        <script src="jsonviewer.js"></script>
-        <link rel="stylesheet" href="jsonviewer.css">
+        <script src="../src/jsonviewer.js"></script>
+        <link rel="stylesheet" href="../src/jsonviewer.css">
     </head>
     <body>
-        <div id="container"></div>
+        <div id="container" style="height: calc(100vh - 120px);"></div>
         <script>
-            var jsonviewer = new JSONViewer({"example": {"abc": {"a": 1, "b":2, "c":3}, 345: "test"}}, document.getElementById("container"), console.log);
+            var jsonviewer = new JSONViewer({"example": {"abc": {"a": 1, "b":2, "c":3}, 345: "test"}}, document.getElementById("container"), {
+                nodeClickCallback: console.log
+            });
 
-            jsonviewer.updateTree({"example2": {"abc": {"x": 10, "y":8, "z":5}, 543: "test2"}});
+            setTimeout(() => {
+                jsonviewer.updateTree({"example2": {"abc": {"x": 10, "y":8, "z":5}, 543: "test2"}});
+            }, 3000);
         </script>
     </body>
 </html>
 ```
 ## CDNs:
- - `<script src="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.6/src/jsonviewer.min.js"></script>`
- - `<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.6/src/jsonviewer.min.css">`
+ - `<script src="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.7/src/jsonviewer.min.js"></script>`
+ - `<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.7/src/jsonviewer.min.css">`
