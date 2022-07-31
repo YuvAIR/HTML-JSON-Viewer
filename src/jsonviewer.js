@@ -138,14 +138,16 @@ class JSONViewer {
         var treeContainer = $("<div class='json-viewer-tree-container'></div>");
         this.#container.append(treeContainer);
         this.#createTree(data, treeContainer);
+        treeContainer.parent().focus();
     }
 
 
     /**
      * Check if the node at the given path is expanded.
+     * @param {string[]} path
      */
     isExpanded(path) {
-        return this.#shown.indexOf(path) != -1;
+        return this.#shown.indexOf(path.join("/")) != -1;
     }
     /**
      * Expands or collapses the node at the given path (expands if collapsed, collapses if expanded)
@@ -159,9 +161,9 @@ class JSONViewer {
         node.find(".arrow").first().attr("src", node.attr("src") == JSONViewer.#play_circle ? JSONViewer.#arrow_right : JSONViewer.#play_circle);
         node.toggleClass("hidden");
         if (node.attr("src") == JSONViewer.#arrow_right) {
-            this.#shown.push(path);
+            this.#shown.push(path.join("/"));
         } else {
-            this.#shown.splice(this.#shown.indexOf(JSONViewer.getNodePath(node)), 1);
+            this.#shown.splice(this.#shown.indexOf(JSONViewer.getNodePath(node).join("/")), 1);
         }
         this.#updateLines();
     }
@@ -270,59 +272,31 @@ class JSONViewer {
      */
     #createTree(data, current_node, first=true, path=[]) {
         current_node = $(current_node)[0];
-        if (first) {
-            current_node.parentElement.focus();
-            if (Object.keys(data).length == 1 && typeof data[Object.keys(data)[0]] == "object") {
-                var key = Object.keys(data)[0];
-
-                current_node.innerHTML = "";
-                var node = document.createElement("div");
-                node.classList.add("node");
-                node.classList.add("root");
-                node.dataset.path = path.join("/") + "/" + key;
-                node.dataset.key = JSON.stringify(key);
-
-                    var nodeBody = document.createElement("div");
-                    nodeBody.classList.add("nodeBody");
-                    nodeBody.classList.add("root");
-
-                        var nodeKey = document.createElement("span");
-                        nodeKey.classList.add("nodeKey");
-                        nodeKey.innerHTML = key;
-
-                    nodeBody.appendChild(nodeKey);
-
-                node.appendChild(nodeBody);
-
-
-                current_node.appendChild(node);
-                current_node = node;
-                first = false;
-                data = data[key];
-                path.push(key);
-            }
-        }
 
         var nodes = []
+        var firstCond = first && Object.keys(data).length == 1;
         for (var key in data) {
             var node = document.createElement("div");
             node.classList.add("node");
-            node.dataset.path = path.join("/") + "/" + key;
+            firstCond && node.classList.add("root");
+            node.dataset.path = path.concat(key).join("/");
             node.dataset.key = JSON.stringify(key);
 
                 var nodeBody = document.createElement("div");
                 nodeBody.classList.add("nodeBody");
+                firstCond && nodeBody.classList.add("root");
+                var arrowDiv = document.createElement("div");
+                arrowDiv.classList.add("arrowDiv");
 
-                    var arrowDiv = document.createElement("div");
-                    arrowDiv.classList.add("arrowDiv");
-
-                        var arrow = document.createElement("img");
-                        arrow.classList.add("arrow");
-                        arrow.src = JSONViewer.#play_circle;
+                if (!firstCond) {
+                    var arrow = document.createElement("img");
+                    arrow.classList.add("arrow");
+                    arrow.src = JSONViewer.#play_circle;
                 
                     arrowDiv.appendChild(arrow);
                 
-                nodeBody.appendChild(arrowDiv);
+                    nodeBody.appendChild(arrowDiv);
+                }
                 
                     var nodeKey = document.createElement("span");
                     nodeKey.classList.add("nodeKey");
@@ -335,13 +309,14 @@ class JSONViewer {
 
             current_node.appendChild(node);
             var isHidden = this.#shown.indexOf(JSONViewer.getNodePath(node).join("/")) == -1;
-            isHidden && node.classList.add("hidden");
-            !isHidden && (arrow.src = JSONViewer.#arrow_right);
+            isHidden && firstCond && this.#shown.push(JSONViewer.getNodePath(node).join("/"));
+            isHidden && !firstCond && node.classList.add("hidden");
+            !isHidden && arrow && (arrow.src = JSONViewer.#arrow_right);
 
             if (typeof data[key] === "object") {
                 this.#createTree(data[key], node, false, path.concat([key]));
             } else {
-                arrow.remove();
+                arrow && arrow.remove();
                 arrowDiv.classList.add("lastArrowDiv")
                 nodeKey.classList.add("lastNodeKey");
                 

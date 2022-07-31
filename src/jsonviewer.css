@@ -53,8 +53,10 @@ button {
     --jsonviewer-max-value-width: 100%;
 }
 .json-viewer-container:focus {
-    /* outline: 2px solid white; */
     box-shadow: 0px 0px 5px;
+}
+.json-viewer-container:focus-visible {
+    outline: none;
 }
 
 .json-viewer-container::-webkit-scrollbar-track {

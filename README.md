@@ -48,6 +48,7 @@ JSONViewer.query(q="", depth=0);
 
 /**
  * Check if the node at the given path is expanded.
+ * @param {string[]} path
  */
 JSONViewer.isExpanded(path);
 
@@ -104,5 +105,5 @@ JSONViewer.collapseAll();
 </html>
 ```
 ## CDNs:
- - `<script src="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.7/src/jsonviewer.min.js"></script>`
- - `<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.7/src/jsonviewer.min.css">`
+ - `<script src="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.8/src/jsonviewer.min.js"></script>`
+ - `<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.8/src/jsonviewer.min.css">`
