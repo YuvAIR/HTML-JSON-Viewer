@@ -10,8 +10,21 @@ window.onload = function() {
         r.css('--jsonviewer-background-color', '#ffffff');
         r.css('--jsonviewer-arrow', '0');
         r.css('--jsonviewer-arrow-hover', '0.175');
+        r.css('--jsonviewer-highlight-color', '#ffd34f');
     }
 };
+
+
+$(document).on("keydown", ".json-viewer-container", function (e) {
+    if (e.ctrlKey && e.key === "f") {
+        e.preventDefault();
+        
+        var search = $(this).find(".json-viewer-search")[0];
+        search.style.display = "block";
+        search.getElementsByTagName("input")[0].focus();
+        search.nextElementSibling.style.marginTop = "-153px";
+    }
+})
 
 
 class JSONViewer {
@@ -59,6 +72,27 @@ class JSONViewer {
         this.#data = data;
         this.#options = options ? options : {};
 
+        this.#container.addClass("json-viewer-container");
+        this.#container.attr("tabindex", "0");
+
+        var search = $("<div class='json-viewer-search' style='display: none;'></div>");
+        var closeButton = $("<button class='json-viewer-close-search'>&times;</button>");
+        closeButton[0].addEventListener("click", (e) => {
+            e.target.parentElement.style.display = "none";
+            e.target.parentElement.nextElementSibling.style.marginTop = "0";
+            this.updateTree(this.#data, true);
+        });
+        search.append(closeButton);
+        search.append($("<input type='text' placeholder='Query' title='Filter query.'></input>"));
+        search.append($("<input type='number' placeholder='Depth' title='Depth of the desired filtered nodes (count starts at 0)' value='0'></input>").change((e) => {
+            e.target.value = (e.target.valueAsNumber || 0);
+        }));
+        search.append($("<button class='json-viewer-filter-button'>&#128269;</button>").click(() => {
+            this.query(search.find("input").eq(0).val(), search.find("input").eq(1).val());
+        }));
+
+        this.#container.append(search);
+
         if (options.maxKeyWidth) {
             this.#container.css("--jsonviewer-max-key-width", options.maxKeyWidth);
         }
@@ -93,23 +127,63 @@ class JSONViewer {
             jsonThis.#updateLines();
         });
 
-        this.#createTree(data, container);
+        var treeContainer = $("<div class='json-viewer-tree-container'></div>");
+        this.#container.append(treeContainer);
+        this.#createTree(data, treeContainer);
+    }
+
+    /**
+     * Filters the tree to show only nodes at a given depth which match the query.
+     * @param {string} q
+     * @param {number} depth
+     */
+    query(q="", depth=0) {
+        q = q.toString();
+        depth = parseInt(depth);
+        var new_data = this.#queryRec(q, depth, this.#data);
+        this.updateTree(new_data, true);
+
+        var nodes = this.#container.find(".json-viewer-tree-container .nodeKey, .json-viewer-tree-container .nodeValue");
+        for (const node of nodes) {
+            var text = node.innerHTML;
+            var regex = new RegExp(`(${q})`, 'ig');
+            text = text.replace(regex, '<span class="highlight">$1</span>');
+            node.innerHTML = text;
+        }
+    }
+    #queryRec(q, depth, data) {
+        var new_data = {};
+        for (const key in data) {
+            if (key.toLowerCase().includes(q.toLowerCase())) {
+                new_data[key] = data[key];
+            } else if (JSON.stringify(data[key]).toLowerCase().includes(q.toLowerCase())) {
+                if (depth == 0) {
+                    new_data[key] = data[key];
+                } else { // depth > 0
+                    new_data[key] = this.#queryRec(q, depth-1, data[key]);
+                }
+            }
+        }
+        return new_data;
     }
 
 
     /**
      * Update the tree using new data
-     * @param {Object|string} data 
+     * @param {Object|string} data
+     * @param {boolean} keepOldData - if true, only the tree would be updated, but the old data is kept. (shouldn't really be used by the user)
      */
-    updateTree(data) {
-        this.#container.empty();
+    updateTree(data, keepOldData=false) {
         this.#verticalLines = [];
         this.#topVerticalLines = [];
         this.#shown = [];
-        this.#data = typeof data === "string" ? JSON.parse(data) : data;
-        this.#createTree(this.#data, this.#container);
+        data = typeof data === "string" ? JSON.parse(data) : data;
+        if (!keepOldData) {
+            this.#data = data;
+        }
+        this.#container.find(".json-viewer-tree-container").empty();
+        this.#createTree(data, this.#container.find(".json-viewer-tree-container"));
     }
-
     
     /**
      * @param {Object} data
@@ -118,8 +192,6 @@ class JSONViewer {
     #createTree(data, current_node, first=true) {
         current_node = $(current_node)[0];
         if (first) {
-            current_node.classList.add("json-tree-viewer-container");
-
             if (Object.keys(data).length == 1 && typeof data[Object.keys(data)[0]] == "object") {
                 var key = Object.keys(data)[0];
 
@@ -218,7 +290,7 @@ class JSONViewer {
     static getNodePath(node) {
         node = $(node)
         var currPath = [];
-        while (node.length > 0 && !node.hasClass("json-tree-viewer-container")) {
+        while (node.length > 0 && !node.hasClass("json-viewer-tree-container")) {
             currPath.push(JSON.parse(node.attr("data-key")));
             node = node.parent();
         }

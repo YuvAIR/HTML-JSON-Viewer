@@ -37,6 +37,14 @@ JSONViewer.updateTree(data);
  * @returns {string[]} - ["path", "to", "node"] => data[path][to][nodeName] == nodeValue
  */
 static JSONViewer.getNodePath(node);
+
+/**
+ * Filters the tree to show only nodes at a given depth which match the query (key / value contain the query as a string)
+ * Pressing ctrl+f while the container is focused will open a search box
+ * @param {string} q
+ * @param {number} depth
+ */
+JSONViewer.query(q="", depth=0);
 ```
 ## Example:
 ```html
@@ -59,5 +67,5 @@ static JSONViewer.getNodePath(node);
 </html>
 ```
 ## CDNs:
- - `<script src="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@latest/src/jsonviewer.min.js"></script>`
- - `<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@latest/src/jsonviewer.min.css">`
+ - `<script src="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.5/src/jsonviewer.min.js"></script>`
+ - `<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.5/src/jsonviewer.min.css">`

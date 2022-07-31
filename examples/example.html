@@ -7,9 +7,11 @@
         <link rel="stylesheet" href="../src/jsonviewer.css">
     </head>
     <body>
-        <div id="container"></div>
+        <div id="container" style="height: calc(100vh - 120px);"></div>
         <script>
-            var jsonviewer = new JSONViewer({"example": {"abc": {"a": 1, "b":2, "c":3}, 345: "test"}}, document.getElementById("container"), console.log);
+            var jsonviewer = new JSONViewer({"example": {"abc": {"a": 1, "b":2, "c":3}, 345: "test"}}, document.getElementById("container"), {
+                nodeClickCallback: console.log
+            });
 
             setTimeout(() => {
                 jsonviewer.updateTree({"example2": {"abc": {"x": 10, "y":8, "z":5}, 543: "test2"}});
