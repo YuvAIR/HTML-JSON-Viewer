@@ -22,7 +22,8 @@ $(document).on("keydown", ".json-viewer-container", function (e) {
         var search = $(this).find(".json-viewer-search")[0];
         search.style.display = "block";
         search.getElementsByTagName("input")[0].focus();
-        search.nextElementSibling.style.marginTop = "-153px";
+        // var height = search.getBoundingClientRect().height;
+        // search.nextElementSibling.style.marginTop = -(height + 14) + "px";
     }
 })
 
@@ -57,6 +58,7 @@ class JSONViewer {
      * @property {onNodeClick} nodeClickCallback - callback function to be called when a node (key) is clicked
      * @property {string} maxKeyWidth - max width of a key node (css string), overflow will be hidden. default: "100%"
      * @property {string} maxValueWidth - max width of a value node (css string), overflow will craete a new line. default: "100%"
+     * @property {number} defaultDepth - default depth of the tree. default: 1
      */
     /**
      * @param {Object|string} data - Object / JSON string to be displayed
@@ -72,6 +74,8 @@ class JSONViewer {
         this.#data = data;
         this.#options = options ? options : {};
 
+        var defaultDepth = this.#options.defaultDepth ? this.#options.defaultDepth : 1;
+
         this.#container.addClass("json-viewer-container");
         this.#container.attr("tabindex", "0");
 
@@ -84,7 +88,7 @@ class JSONViewer {
         });
         search.append(closeButton);
         search.append($("<input type='text' placeholder='Query' title='Filter query.'></input>"));
-        search.append($("<input type='number' placeholder='Depth' title='Depth of the desired filtered nodes (count starts at 0)' value='0'></input>").change((e) => {
+        search.append($(`<input type='number' placeholder='Depth' title='Depth of the desired filtered nodes (count starts at 0)' value='${defaultDepth}'></input>`).change((e) => {
             e.target.value = (e.target.valueAsNumber || 0);
         }));
         search.append($("<button class='json-viewer-filter-button'>&#128269;</button>").click(() => {
@@ -192,6 +196,7 @@ class JSONViewer {
     #createTree(data, current_node, first=true) {
         current_node = $(current_node)[0];
         if (first) {
+            current_node.parentElement.focus();
             if (Object.keys(data).length == 1 && typeof data[Object.keys(data)[0]] == "object") {
                 var key = Object.keys(data)[0];
 

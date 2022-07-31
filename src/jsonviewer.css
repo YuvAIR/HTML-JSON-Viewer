@@ -93,7 +93,7 @@ button {
     padding-right: 7px;
     margin: 0px;
     margin-right: 5px;
-    /* min-width: max-content; */
+    min-width: max-content;
     max-width: var(--jsonviewer-max-key-width);
     overflow: hidden;
     white-space: nowrap;
@@ -220,12 +220,13 @@ button {
     left: 99999999999999999999999999999999px;
     top: 14px;
     width: 300px;
-    height: 120px;
+    height: 96px;
     margin: 0px;
     margin-right: 14px;
     margin-top: 14px;
-    box-shadow: 4px 4px 10px #000000ab;
     padding: 10px;
+    background-color: var(--jsonviewer-background-color);
+    box-shadow: 4px 4px 10px #000000ab;
     border-radius: 10px;
 
     z-index: 1;
@@ -233,7 +234,9 @@ button {
 
 .json-viewer-search input {
     width: 80%;
+    height: 10px;
     margin-right: 0px;
+    margin-bottom: 3px;
 }
 
 .json-viewer-close-search {
@@ -269,7 +272,6 @@ button {
 
 .json-viewer-tree-container {
     position: relative;
-    /* margin-top: -153px; */
 }
 
 .json-viewer-tree-container .highlight {
