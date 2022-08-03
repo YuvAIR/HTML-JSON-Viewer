@@ -20,8 +20,12 @@ $(document).on("keydown", ".json-viewer-container", function (e) {
         e.preventDefault();
         
         var search = $(this).find(".json-viewer-search")[0];
-        search.style.display = "block";
-        search.getElementsByTagName("input")[0].focus();
+        search.classList.toggle("hidden");
+        if (!search.classList.contains("hidden")) {
+            search.getElementsByTagName("input")[0].focus();
+        } else {
+            this.focus();
+        }
     }
 })
 
@@ -46,8 +50,20 @@ class JSONViewer {
     #container;
     #data;
     #options;
+    #advancedSearch = false;
+    static #instances = {};
     static #arrow_right = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAGxJREFUSEtjZKAxYKSx+QyjFhAM4ZEVRA4MDAwHCIYJmgJSgmg/AwNDI6mWkGqBKQMDgw8plpBqASiYvpJiCTkWgEKZaEsGpQVEux7kVVJ9QPNIpmkypXlGIzUTg9WTEgejFpAVAgQ1Df04AABMSBYZWnttmAAAAABJRU5ErkJggg==";
     static #play_circle = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAXpJREFUSEu1lX9RxEAMhd854ByAAkDBgQLAATjAAXdSUAAoAAmgAE4BoADmY5JOSH+knU73z+5uvpeXNLvSwmu1cHyNBRxKOpZ0YoJeJb1J+qgEVoBLSXchcI4HaCfpsQ/UBziQ9CDpzJQS4EUSAVlkwh4CyIy9K0lfGdQFIPizBUHdtrCBfbIEfp4hXQDUbCSdBsWV1WRCxtwF0qwM8INjlGeoZ4JVTU0yIHocA+D3hRW05XM4yP0fy/7vcwTQiu8WJPsOgLrQljdmRZdtnsWRt3AEuD14iJc5AwC+sABQzsaFNDZFgNPXAxcjlOBA4j9AB35GF+YAviVdTwFMsehe0u1Ui8YUeW+qc43cusEic6jVZnbTxwIBqjb1UdJqUz4s/qMBmTMqnkxk76hgg1YDwpTEEsbG0HLfeR+w8p+FQ+Oa/mboURcf1wRhAfe6MLpRTsuOGtdRLTVBIQG7FkD2Jz84ORgtjNL4ZJLZ7CezsL/ert7kOkJx4hdvXWgZmZakXgAAAABJRU5ErkJggg==";
+
+    /**
+     * Returns the JSONViewer object for the given container - note that the container IDs must be unique.
+     * @param {HTMLElement|jQuery} container
+     * @returns {JSONViewer}
+     */
+    static getInstanceByContainer(container) {
+        container = $(container)[0];
+        return JSONViewer.#instances[container.id];
+    }
 
     get container() {
         return this.#container;
@@ -85,25 +101,56 @@ class JSONViewer {
         this.#data = data;
         this.#options = options ? options : {};
 
+        JSONViewer.#instances[container.id] = this;
+
         var defaultDepth = this.#options.defaultDepth ? this.#options.defaultDepth : 1;
 
         this.#container.addClass("json-viewer-container");
         this.#container.attr("tabindex", "0");
 
-        var search = $("<div class='json-viewer-search' style='display: none;' tabindex='0'></div>");
-        var closeButton = $("<button class='json-viewer-close-search'>&times;</button>");
-        closeButton[0].addEventListener("click", (e) => {
-            e.target.parentElement.style.display = "none";
+        var search = $("<div class='json-viewer-search hidden' tabindex='0'></div>");
+        search.append($("<button class='json-viewer-close-search'>&times;</button>").click((e) => {
+            e.target.parentElement.classList.add("hidden");
             e.target.parentElement.nextElementSibling.style.marginTop = "0";
+            this.#container.focus();
             this.updateTree(this.#data, true);
-        });
-        search.append(closeButton);
+        }));
         search.append($("<input type='text' placeholder='Query' title='Filter query.'></input>"));
         search.append($(`<input type='number' placeholder='Depth' title='Depth of the desired filtered nodes (count starts at 0)' value='${defaultDepth}'></input>`).change((e) => {
-            e.target.value = (e.target.valueAsNumber || 0);
+            if (e.target.type == "number") {
+                e.target.value = (e.target.valueAsNumber || 0);
+            }
         }));
-        search.append($("<button class='json-viewer-filter-button'>&#128269;</button>").click(() => {
-            this.query(search.find("input").eq(0).val(), search.find("input").eq(1).val());
+
+        search.append($("<input type='checkbox' name='advanced' title='Filter by specific paths and rules'></input>").change((e) => {
+            this.#advancedSearch = e.target.checked;
+            if (e.target.checked) {
+                e.target.parentElement.children[1].placeholder = "Path (e.g. `path.*.to.node.*`)";
+                e.target.parentElement.children[2].placeholder = 'Rule (e.g. `this.someChild.has("value")`, where `this` is the last node in the path)';
+                e.target.parentElement.children[1].title = "Filter path";
+                e.target.parentElement.children[2].title = "Filter rule (JS-like)";
+                e.target.parentElement.children[2].type = "text";
+                // e.target.parentElement.children[1].value = "";
+                e.target.parentElement.children[2].value = "";
+            } else {
+                e.target.parentElement.children[1].placeholder = "Query";
+                e.target.parentElement.children[2].placeholder = "Depth";
+                e.target.parentElement.children[1].title = "Filter query";
+                e.target.parentElement.children[2].title = "Depth of the desired filtered nodes (count starts at 0)";
+                e.target.parentElement.children[2].type = "number";
+                e.target.parentElement.children[1].value = "";
+                e.target.parentElement.children[2].value = "0";
+            }
+        }));
+        search.append($("<label for='advanced'>Advanced filter</label>"));
+        
+        search.append($("<button class='json-viewer-filter-button' title='Ctrl+F'>&#128269;</button>").click((e) => {
+            if (e.target.parentElement.classList.contains("hidden")) {
+                e.target.parentElement.classList.remove("hidden");
+                e.target.parentElement.children[1].focus();
+            } else {
+                this.query(search.find("input").eq(0).val(), search.find("input").eq(1).val());
+            }
         }));
 
         this.#container.append(search);
@@ -207,32 +254,48 @@ class JSONViewer {
     }
 
 
+
     /**
      * Filters the tree to show only nodes at a given depth which match the query.
      * @param {string} q
-     * @param {number} depth
+     * @param {number|string} depth
+     * @param {boolean} advanced - If true, q is the path and depth is the rule.
      */
-    query(q="", depth=0) {
+    query(q="", depth=0, advanced=null) {
         q = q.toString();
-        depth = parseInt(depth);
-        var new_data = this.#queryRec(q, depth, this.#data);
+        advanced = advanced === null ? this.#advancedSearch : advanced;
+        !advanced && (depth = parseInt(depth));
+        
+
+        var new_data;
+        var regex;
+        if (advanced === true) {
+            new_data = JSONViewer.#advancedQueryRec(q.trim().split("."), depth.trim(), this.#data);
+            var strings = new_data.strings;
+            new_data = new_data.data;
+            regex = strings.length > 0 ? new RegExp(`(${strings.join("|")})`, "gi") : null;
+        } else {
+            new_data = JSONViewer.#queryRec(q, depth, this.#data);
+            regex = new RegExp(`(${q})`, 'ig');
+        }
         this.updateTree(new_data, true);
 
         var nodes = this.#container.find(".json-viewer-tree-container .nodeKey, .json-viewer-tree-container .nodeValue");
-        for (const node of nodes) {
-            var og_text = node.innerHTML;
-            var regex = new RegExp(`(${q})`, 'ig');
-            var text = og_text.replace(regex, '<span class="highlight">$1</span>');
-            if (text != og_text) {
-                var path = JSONViewer.getNodePath(node.parentElement.parentElement);
-                for (var i = 0; i < path.length; i++) {
-                    this.expand(path.slice(0, i + 1));
+        if (regex) {
+            for (const node of nodes) {
+                var og_text = node.innerHTML;
+                var text = og_text.replace(regex, '<span class="highlight">$1</span>');
+                if (text != og_text) {
+                    var path = JSONViewer.getNodePath(node.parentElement.parentElement);
+                    for (var i = 0; i < path.length; i++) {
+                        this.expand(path.slice(0, i + 1));
+                    }
                 }
+                node.innerHTML = text;
             }
-            node.innerHTML = text;
         }
     }
-    #queryRec(q, depth, data) {
+    static #queryRec(q, depth, data) {
         var new_data = {};
         for (const key in data) {
             if (key.toLowerCase().includes(q.toLowerCase())) {
@@ -241,11 +304,121 @@ class JSONViewer {
                 if (depth == 0) {
                     new_data[key] = data[key];
                 } else { // depth > 0
-                    new_data[key] = this.#queryRec(q, depth-1, data[key]);
+                    new_data[key] = JSONViewer.#queryRec(q, depth-1, data[key]);
                 }
             }
         }
         return new_data;
+    }
+
+    static #advancedQueryRec(path, query, data) {
+        var expression = esprima.parse(query).body[0].expression;
+        function evaluate(path, expr, target, isFunc=false, isFirstInMember=true) {
+            switch (expr.type) {
+                case "CallExpression":
+                    var func = evaluate(path, expr.callee, target, true);
+                    var args = expr.arguments.map((arg) => evaluate(path, arg, target));
+                    return func(...args);
+                case "BinaryExpression":
+                case "LogicalExpression":
+                    return eval(`evaluate(path, expr.left, target) ${expr.operator} evaluate(path, expr.right, target)`);
+                case "UnaryExpression":
+                    return eval(`${expr.operator} evaluate(path, expr.argument, target)`);
+                case "MemberExpression":
+                    var object = evaluate(path, expr.object, target, false, true && isFirstInMember);
+                    var property = evaluate(path, expr.property, target, false, false);
+                    var res = object[property];
+                    if (isFunc) {
+                        switch (property) {
+                            case "has":
+                                property = Array.isArray(object) ? "includes" : "hasOwnProperty";
+                                break;
+                            case "hasK":
+                            case "hasKey":
+                                property = "hasOwnProperty";
+                                break;
+                            case "hasV":
+                            case "hasVal":
+                            case "hasValue":
+                                object = Object.values(object);
+                                property = "includes";
+                                break;
+                            
+                            case "keys":
+                                return () => Object.keys(object);
+                            
+                            case "values":
+                                return () => Object.values(object);
+                            
+                            case "len":
+                            case "length":
+                                return () => Object.keys(object).length;
+                        }
+                        return object[property].bind(object);
+                    } else if (res == undefined) {
+                        if (Array.isArray(object) && property < 0) {
+                            res = object[object.length + property];
+                        }
+                    }
+                    return res;
+                case "Identifier":
+                    var res = expr.name;
+                    if (["length", "len"].includes(res) && isFunc) {
+                        res = (x) => Object.keys(x).length;
+                    } else if (res === "path" && isFirstInMember) {
+                        res = path;
+                    }
+                    return res;
+                case "Literal":
+                    return expr.value;
+                case "ThisExpression":
+                    return target;
+            }
+        }
+        
+        var new_data = {};
+        function rec(data, path, depth=0, pathToHere=[]) {
+            if (path.length > depth && path[depth] == "*") {
+                for (const key in data) {
+                    rec(data[key], path, depth+1, pathToHere.concat([key]));
+                }
+            } else if (path.length > depth && path[depth] in data) {
+                rec(data[path[depth]], path, depth+1, pathToHere.concat([path[depth]]));
+            } else if (path.length == depth) {
+                if (evaluate(pathToHere, expression, data)) {
+                    var pointer = new_data;
+                    for (var i = 0; i < pathToHere.length - 1; i++) {
+                        if (!(pathToHere[i] in pointer)) {
+                            pointer[pathToHere[i]] = {};
+                        }
+                        pointer = pointer[pathToHere[i]];
+                    }
+                    pointer[pathToHere[pathToHere.length - 1]] = data;
+
+                }
+            }
+        }
+
+        rec(data, path);
+
+        var strings = JSONViewer.#getAllStrings(expression);
+
+        return {
+            strings: strings,
+            data: new_data
+        };
+    }
+
+    static #getAllStrings(expr) {
+        var strings = [];
+        for (const key in expr) {
+            if (key == "type" && expr[key] == "Literal" && typeof expr.value == "string") {
+                strings.push(expr.value);
+            } else if (typeof expr[key] == "object") {
+                strings = strings.concat(JSONViewer.#getAllStrings(expr[key]));
+            }
+        }
+        return strings;
     }
 
 

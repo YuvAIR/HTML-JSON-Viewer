@@ -39,9 +39,7 @@ button {
     color: var(--jsonviewer-main-color);
     border-radius: 20px;
     border: 1px solid;
-    padding-right: 0px;
-    padding-bottom: 20px;
-    padding-top: 18px;
+    padding: 20px;
     min-height: 300px;
     max-height: calc(100% - 40px);
     overflow-y: scroll;
@@ -176,7 +174,7 @@ button {
 }
 
 
-.json-viewer-container .hidden .node, .json-viewer-container .hidden .verticalLine {
+.json-viewer-container .hidden:not(.root) .node, .json-viewer-container .hidden:not(.root) .verticalLine {
     display: none;
 }
 
@@ -218,27 +216,55 @@ button {
 
 
 .json-viewer-search {
+    display: block;
     position: sticky;
     left: 99999999999999999999999999999999px;
     top: 14px;
-    width: 300px;
-    height: 96px;
+    min-width: calc(100% - 40px);
+    max-width: fit-content;
+    /* height: 96px; */
     margin: 0px;
-    margin-right: 14px;
-    margin-top: 14px;
+    margin-bottom: 37px;
     padding: 10px;
     background-color: var(--jsonviewer-background-color);
     box-shadow: 4px 4px 10px #000000ab;
     border-radius: 10px;
 
     z-index: 1;
+
+    visibility: visible;
 }
 
-.json-viewer-search input {
-    width: 80%;
+.json-viewer-search.hidden {
+    visibility: hidden;
+    height: 0px;
+    margin: 0px;
+    padding: 0px;
+}
+
+.hidden .json-viewer-filter-button {
+    visibility: visible;
+    right: 0px;
+    top: -8px;
+    position: absolute;
+}
+
+.json-viewer-search input:not([type="checkbox"]) {
+    width: calc(100% - 50px);
     height: 10px;
     margin-right: 0px;
     margin-bottom: 3px;
+}
+.json-viewer-search input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    margin: 0px;
+    margin-top: 8px;
+    margin-left: 5px;
+    margin-right: 6px;
+}
+.json-viewer-search label[for="advanced"] {
+    margin-top: 4px;
 }
 
 .json-viewer-close-search {
@@ -262,10 +288,12 @@ button {
 .json-viewer-filter-button {
     width: 30px;
     height: 30px;
-    margin-bottom: 0px;
+    margin: -3px;
+    margin-left: -1px;
     padding: 0px;
     border-radius: 100%;
     background-color: rgba(0, 0, 0, 0);
+    display: block;
 }
 .json-viewer-filter-button:hover {
     background-color: rgba(0, 0, 0, 0.4);

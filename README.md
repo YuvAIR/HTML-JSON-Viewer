@@ -26,6 +26,13 @@
 class JSONViewer(data, container, options);
 
 /**
+ * Returns the JSONViewer object for the given container - note that the container IDs must be unique.
+ * @param {HTMLElement|jQuery} container
+ * @returns {JSONViewer}
+ */
+static JSONViewer.getInstanceByContainer(container);
+
+/**
  * Update the tree using new data
  * @param {Object|string} data 
  */
@@ -80,12 +87,14 @@ JSONViewer.expandAll();
  */
 JSONViewer.collapseAll();
 ```
-## Example:
+
+## Code Example:
 ```html
 <!DOCTYPE html>
 <html>
     <head>
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/esprima@4.0.1/dist/esprima.min.js"></script>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
         <script src="../src/jsonviewer.js"></script>
         <link rel="stylesheet" href="../src/jsonviewer.css">
@@ -93,17 +102,21 @@ JSONViewer.collapseAll();
     <body>
         <div id="container" style="height: calc(100vh - 120px);"></div>
         <script>
-            var jsonviewer = new JSONViewer({"example": {"abc": {"a": 1, "b":2, "c":3}, 345: "test"}}, document.getElementById("container"), {
+            var jsonviewer = new JSONViewer({"example": {"a": {"x": 1, "y":2, "z":3}, "b": {"x": 4, "y": 5, "z": 6}}}, document.getElementById("container"), {
                 nodeClickCallback: console.log
             });
 
             setTimeout(() => {
-                jsonviewer.updateTree({"example2": {"abc": {"x": 10, "y":8, "z":5}, 543: "test2"}});
+                jsonviewer.updateTree({"example2": {"c": {"x": 7, "y":8, "z":9}, "d": {"x": 10, "y": 11, "z": 12}}});
             }, 3000);
         </script>
     </body>
 </html>
 ```
+
 ## CDNs:
  - `<script src="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.8/src/jsonviewer.min.js"></script>`
  - `<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.8/src/jsonviewer.min.css">`
+
+
+## [Filtering](FILTER.md)
