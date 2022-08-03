@@ -1,7 +1,8 @@
 # HTML-JSON-Viewer
 ## Requirements:
- - jQuery
- - Water CSS is recommeneded (style will be adjusted for Dark/Light Water Theme)
+ - jQuery - [CDN](https://code.jquery.com/jquery-3.6.0.min.js)
+ - Water CSS (recommeneded + style will be adjusted for Dark/Light Water Theme) - [CDN](https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css)
+ - Esprima - [CDN](https://cdn.jsdelivr.net/npm/esprima@4.0.1/dist/esprima.min.js)
 
 ## Docs:
 ```js
@@ -95,7 +96,7 @@ JSONViewer.collapseAll();
     <head>
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/esprima@4.0.1/dist/esprima.min.js"></script>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
         <script src="../src/jsonviewer.js"></script>
         <link rel="stylesheet" href="../src/jsonviewer.css">
     </head>
