@@ -218,9 +218,9 @@ button {
 .json-viewer-search {
     display: block;
     position: sticky;
-    left: 99999999999999999999999999999999px;
+    left: 20px;
     top: 14px;
-    min-width: calc(100% - 40px);
+    min-width: calc(100% - 45px);
     max-width: fit-content;
     /* height: 96px; */
     margin: 0px;
