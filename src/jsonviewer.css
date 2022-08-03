@@ -293,10 +293,17 @@ button {
     padding: 0px;
     border-radius: 100%;
     background-color: rgba(0, 0, 0, 0);
-    display: block;
 }
 .json-viewer-filter-button:hover {
     background-color: rgba(0, 0, 0, 0.4);
+}
+
+.json-viewer-help-button {
+    border-radius: 100%;
+    width: 30px;
+    height: 30px;
+    padding: 0px;
+    margin-left: 10px;
 }
 
 

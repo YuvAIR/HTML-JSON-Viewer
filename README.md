@@ -21,7 +21,7 @@
  */
 /**
  * @param {Object|string} data - Object / JSON string to be displayed
- * @param {HTMLElement} container - DOM element to display the tree in
+ * @param {HTMLElement} container - DOM element to display the tree in, SHOULD HAVE A UNIQUE ID
  * @param {JSONViewerOptions} options
  */
 class JSONViewer(data, container, options);
@@ -116,8 +116,8 @@ JSONViewer.collapseAll();
 ```
 
 ## CDNs:
- - `<script src="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.9/src/jsonviewer.min.js"></script>`
- - `<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.9/src/jsonviewer.min.css">`
+ - `<script src="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.10/src/jsonviewer.min.js"></script>`
+ - `<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.10/src/jsonviewer.min.css">`
 
 
 ## [Filtering](FILTER.md)

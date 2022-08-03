@@ -19,13 +19,7 @@ $(document).on("keydown", ".json-viewer-container", function (e) {
     if (e.ctrlKey && e.key === "f") {
         e.preventDefault();
         
-        var search = $(this).find(".json-viewer-search")[0];
-        search.classList.toggle("hidden");
-        if (!search.classList.contains("hidden")) {
-            search.getElementsByTagName("input")[0].focus();
-        } else {
-            this.focus();
-        }
+        JSONViewer.getInstanceByContainer(this).toggleSearch();
     }
 })
 
@@ -38,7 +32,8 @@ $(document).on("keydown", ".json-viewer-container .json-viewer-search input", fu
 
 $(document).on("keydown", ".json-viewer-container .json-viewer-search", function (e) {
     if (!e.ctrlKey && !e.shiftKey && e.key === "Escape") {
-        e.target.parentElement.getElementsByClassName("json-viewer-close-search")[0].click();
+        // e.target.parentElement.getElementsByClassName("json-viewer-close-search")[0].click();
+        JSONViewer.getInstanceByContainer(this.parentElement).toggleSearch("hide");
     }
 });
 
@@ -109,12 +104,7 @@ class JSONViewer {
         this.#container.attr("tabindex", "0");
 
         var search = $("<div class='json-viewer-search hidden' tabindex='0'></div>");
-        search.append($("<button class='json-viewer-close-search'>&times;</button>").click((e) => {
-            e.target.parentElement.classList.add("hidden");
-            e.target.parentElement.nextElementSibling.style.marginTop = "0";
-            this.#container.focus();
-            this.updateTree(this.#data, true);
-        }));
+        search.append($("<button class='json-viewer-close-search'>&times;</button>").click(this.toggleSearch.bind(this, "hide")));
         search.append($("<input type='text' placeholder='Query' title='Filter query.'></input>"));
         search.append($(`<input type='number' placeholder='Depth' title='Depth of the desired filtered nodes (count starts at 0)' value='${defaultDepth}'></input>`).change((e) => {
             if (e.target.type == "number") {
@@ -143,14 +133,21 @@ class JSONViewer {
             }
         }));
         search.append($("<label for='advanced'>Advanced filter</label>"));
+
+        search.append($("<br>"));
         
         search.append($("<button class='json-viewer-filter-button' title='Ctrl+F'>&#128269;</button>").click((e) => {
             if (e.target.parentElement.classList.contains("hidden")) {
-                e.target.parentElement.classList.remove("hidden");
-                e.target.parentElement.children[1].focus();
+                // e.target.parentElement.classList.remove("hidden");
+                // e.target.parentElement.children[1].focus();
+                this.toggleSearch("show");
             } else {
                 this.query(search.find("input").eq(0).val(), search.find("input").eq(1).val());
             }
+        }));
+        // question mark button
+        search.append($("<button class='json-viewer-help-button' title='Help'>?</button>").click((e) => {
+            window.open("https://github.com/YuvAIR/HTML-JSON-Viewer/blob/main/FILTER.md", "_blank");
         }));
 
         this.#container.append(search);
@@ -187,6 +184,31 @@ class JSONViewer {
         this.#createTree(data, treeContainer);
         treeContainer.parent().focus();
     }
+
+    toggleSearch(action="toggle") {
+        var search = this.#container.find(".json-viewer-search")[0];
+        switch (action) {
+            case "toggle":
+                search.classList.toggle("hidden");
+                break;
+            case "show":
+                search.classList.remove("hidden");
+                break;
+            case "hide":
+                search.classList.add("hidden");
+                break;
+        }
+
+        if (search.classList.contains("hidden")) {
+            search.getElementsByClassName("json-viewer-filter-button")[0].title = "Ctrl+F";
+            this.updateTree(this.#data, true);
+            this.#container.focus();
+        } else {
+            search.getElementsByClassName("json-viewer-filter-button")[0].title = "Enter";
+            search.getElementsByTagName("input")[0].focus();
+        }
+    }
+
 
 
     /**
