@@ -128,8 +128,8 @@ class JSONViewer {
                 e.target.parentElement.children[1].title = "Filter query";
                 e.target.parentElement.children[2].title = "Depth of the desired filtered nodes (count starts at 0)";
                 e.target.parentElement.children[2].type = "number";
-                e.target.parentElement.children[1].value = "";
-                e.target.parentElement.children[2].value = "0";
+                // e.target.parentElement.children[1].value = "";
+                e.target.parentElement.children[2].value = "" + defaultDepth;
             }
         }));
         search.append($("<label for='advanced'>Advanced filter</label>"));
@@ -229,7 +229,7 @@ class JSONViewer {
         }
         node.find(".arrow").first().attr("src", node.attr("src") == JSONViewer.#play_circle ? JSONViewer.#arrow_right : JSONViewer.#play_circle);
         node.toggleClass("hidden");
-        if (node.attr("src") == JSONViewer.#arrow_right) {
+        if (!node.hasClass("hidden")) {
             this.#shown.push(path.join("/"));
         } else {
             this.#shown.splice(this.#shown.indexOf(JSONViewer.getNodePath(node).join("/")), 1);
@@ -292,7 +292,11 @@ class JSONViewer {
         var new_data;
         var regex;
         if (advanced === true) {
-            new_data = JSONViewer.#advancedQueryRec(q.trim().split("."), depth.trim(), this.#data);
+            if (Object.keys(this.#data).length == 1) {
+                var key = Object.keys(this.#data)[0];
+                q = q.startsWith(key) ? q : key + "." + q;
+            }
+            new_data = JSONViewer.#advancedQueryRec(q.split("."), depth.trim(), this.#data);
             var strings = new_data.strings;
             new_data = new_data.data;
             regex = strings.length > 0 ? new RegExp(`(${strings.join("|")})`, "gi") : null;
@@ -307,12 +311,6 @@ class JSONViewer {
             for (const node of nodes) {
                 var og_text = node.innerHTML;
                 var text = og_text.replace(regex, '<span class="highlight">$1</span>');
-                if (text != og_text) {
-                    var path = JSONViewer.getNodePath(node.parentElement.parentElement);
-                    for (var i = 0; i < path.length; i++) {
-                        this.expand(path.slice(0, i + 1));
-                    }
-                }
                 node.innerHTML = text;
             }
         }
