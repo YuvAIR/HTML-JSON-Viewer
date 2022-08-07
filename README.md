@@ -26,6 +26,24 @@
  */
 class JSONViewer(data, container, options);
 
+
+/**
+ * The container element for the JSONViewer object.
+ */
+JSONViewer.container;
+
+/**
+ * The original data, or the last data that was used in an `updateTree` call, with `keepOldData` set to false.
+ * Note that queries call `updateTree` with `keepOldData` set to true, so this will return the original data even if a query is active.
+ */
+JSONViewer.data;
+
+/**
+ * The currently displayed data.
+ */
+JSONViewer.currentData;
+
+
 /**
  * Returns the JSONViewer object for the given container - note that the container IDs must be unique.
  * @param {HTMLElement|jQuery} container
@@ -116,8 +134,8 @@ JSONViewer.collapseAll();
 ```
 
 ## CDNs:
- - `<script src="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.14/src/jsonviewer.min.js"></script>`
- - `<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.14/src/jsonviewer.min.css">`
+ - `<script src="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.15/src/jsonviewer.min.js"></script>`
+ - `<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.15/src/jsonviewer.min.css">`
 
 
 ## [Filtering](FILTER.md)

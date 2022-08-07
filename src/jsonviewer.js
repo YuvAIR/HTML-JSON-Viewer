@@ -44,6 +44,7 @@ class JSONViewer {
     #shown;
     #container;
     #data;
+    #currentData;
     #options;
     #advancedSearch = false;
     static #instances = {};
@@ -60,12 +61,28 @@ class JSONViewer {
         return JSONViewer.#instances[container.id];
     }
 
+    /**
+     * @returns {HTMLElement}
+     */
     get container() {
-        return this.#container;
+        return $(this.#container)[0];
     }
 
+    /**
+     * Get original data or the last data that was used in an `updateTree` call, with `keepOldData` set to false.
+     * Note that queries call `updateTree` with `keepOldData` set to true, so this will return the original data even if a query is active.
+     * @returns {Object}
+     */
     get data() {
         return this.#data;
+    }
+
+    /**
+     * Get the currently displayed data.
+     * @returns {Object}
+     */
+    get currentData() {
+        return this.#currentData;
     }
 
     /**
@@ -81,6 +98,7 @@ class JSONViewer {
      * @property {string} maxKeyWidth - max width of a key node (css string), overflow will be hidden. default: "100%"
      * @property {string} maxValueWidth - max width of a value node (css string), overflow will craete a new line. default: "100%"
      * @property {number} defaultDepth - default depth of the tree. default: 1
+     * @property {boolean} defaultAdvanced - default state of the advanced search. default: false
      */
     /**
      * @param {Object|string} data - Object / JSON string to be displayed
@@ -94,11 +112,13 @@ class JSONViewer {
         this.#shown = [];
         this.#container = $(container);
         this.#data = data;
+        this.#currentData = data;
         this.#options = options ? options : {};
 
         JSONViewer.#instances[$(container)[0].id] = this;
 
         var defaultDepth = this.#options.defaultDepth ? this.#options.defaultDepth : 1;
+        this.#advancedSearch = this.#options.defaultAdvanced ? this.#options.defaultAdvanced : false;
 
         this.#container.addClass("json-viewer-container");
         this.#container.attr("tabindex", "0");
@@ -112,25 +132,31 @@ class JSONViewer {
             }
         }));
 
-        search.append($("<input type='checkbox' name='advanced' title='Filter by specific paths and rules'></input>").change((e) => {
-            this.#advancedSearch = e.target.checked;
-            if (e.target.checked) {
-                e.target.parentElement.children[1].placeholder = "Path (e.g. `path.*.to.node.*`)";
-                e.target.parentElement.children[2].placeholder = 'Rule (e.g. `this.someChild.has("value")`, where `this` is the last node in the path)';
-                e.target.parentElement.children[1].title = "Filter path";
-                e.target.parentElement.children[2].title = "Filter rule (JS-like)";
-                e.target.parentElement.children[2].type = "text";
-                // e.target.parentElement.children[1].value = "";
-                e.target.parentElement.children[2].value = "";
+        var jsonThis = this;
+        function advancedChange(target) {
+            target = $(target)[0];
+            jsonThis.#advancedSearch = target.checked;
+            if (target.checked) {
+                target.parentElement.children[1].placeholder = "Path (e.g. `path.*.to.node.*`)";
+                target.parentElement.children[2].placeholder = 'Rule (e.g. `this.someChild.has("value")`, where `this` is the last node in the path)';
+                target.parentElement.children[1].title = "Filter path";
+                target.parentElement.children[2].title = "Filter rule (JS-like)";
+                target.parentElement.children[2].type = "text";
+                // target.parentElement.children[1].value = "";
+                target.parentElement.children[2].value = "";
             } else {
-                e.target.parentElement.children[1].placeholder = "Query";
-                e.target.parentElement.children[2].placeholder = "Depth";
-                e.target.parentElement.children[1].title = "Filter query";
-                e.target.parentElement.children[2].title = "Depth of the desired filtered nodes (count starts at 0)";
-                e.target.parentElement.children[2].type = "number";
-                // e.target.parentElement.children[1].value = "";
-                e.target.parentElement.children[2].value = "" + defaultDepth;
+                target.parentElement.children[1].placeholder = "Query";
+                target.parentElement.children[2].placeholder = "Depth";
+                target.parentElement.children[1].title = "Filter query";
+                target.parentElement.children[2].title = "Depth of the desired filtered nodes (count starts at 0)";
+                target.parentElement.children[2].type = "number";
+                // target.parentElement.children[1].value = "";
+                target.parentElement.children[2].value = "" + defaultDepth;
             }
+        }
+
+        search.append($(`<input type='checkbox' name='advanced' title='Filter by specific paths and rules' ${this.#advancedSearch ? 'checked' : ''}></input>`).change((e) => {
+            advancedChange(e.target);
         }));
         search.append($("<label for='advanced'>Advanced filter</label>"));
 
@@ -152,6 +178,8 @@ class JSONViewer {
 
         this.#container.append(search);
 
+        advancedChange(search.find("input[type='checkbox']"));
+
         if (options.maxKeyWidth) {
             this.#container.css("--jsonviewer-max-key-width", options.maxKeyWidth);
         }
@@ -159,7 +187,7 @@ class JSONViewer {
             this.#container.css("--jsonviewer-max-value-width", options.maxValueWidth);
         }
         
-        var jsonThis = this;
+        
         var nodeClickCallback = options.nodeClickCallback;
         this.#container.on("click", ".nodeKey", function() {
             if (!nodeClickCallback) {
@@ -452,6 +480,7 @@ class JSONViewer {
         this.#topVerticalLines = [];
         this.#shown = [];
         data = typeof data === "string" ? JSON.parse(data) : data;
+        this.#currentData = data;
         if (!keepOldData) {
             this.#data = data;
         }

@@ -11,7 +11,7 @@
         <div id="container" style="height: calc(100vh - 120px);"></div>
         <script>
             var jsonviewer = new JSONViewer({"example": {"a": {"x": 1, "y":2, "z":3}, "b": {"x": 4, "y": 5, "z": 6}}}, document.getElementById("container"), {
-                nodeClickCallback: console.log
+                nodeClickCallback: console.log,
             });
 
             setTimeout(() => {

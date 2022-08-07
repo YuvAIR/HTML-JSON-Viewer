@@ -244,8 +244,8 @@ button {
 
 .hidden .json-viewer-filter-button {
     visibility: visible;
-    right: 0px;
-    top: -8px;
+    right: -11px;
+    top: 7px;
     position: absolute;
 }
 
