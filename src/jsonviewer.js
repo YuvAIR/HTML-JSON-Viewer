@@ -432,7 +432,7 @@ class JSONViewer {
     static #getAllStrings(expr) {
         var strings = [];
         for (const key in expr) {
-            if (key == "type" && expr[key] == "Literal" && typeof expr.value == "string") {
+            if (key == "type" && expr[key] == "Literal" && typeof expr.value == "string" && expr.value != "") {
                 strings.push(expr.value);
             } else if (typeof expr[key] == "object") {
                 strings = strings.concat(JSONViewer.#getAllStrings(expr[key]));
