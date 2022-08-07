@@ -96,7 +96,7 @@ class JSONViewer {
         this.#data = data;
         this.#options = options ? options : {};
 
-        JSONViewer.#instances[container.id] = this;
+        JSONViewer.#instances[$(container)[0].id] = this;
 
         var defaultDepth = this.#options.defaultDepth ? this.#options.defaultDepth : 1;
 
