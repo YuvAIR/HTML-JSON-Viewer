@@ -452,7 +452,12 @@ class JSONViewer {
             } else if (path.length > depth && path[depth] in data) {
                 rec(data[path[depth]], path, depth+1, pathToHere.concat([path[depth]]));
             } else if (path.length == depth) {
-                if (evaluate(pathToHere, expression, data)) {
+                var res;
+                try {
+                    res = evaluate(pathToHere, expression, data);
+                } catch (e) {}
+                
+                if (res) {
                     var pointer = new_data;
                     for (var i = 0; i < pathToHere.length - 1; i++) {
                         if (!(pathToHere[i] in pointer)) {
