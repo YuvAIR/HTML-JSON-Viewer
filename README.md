@@ -7,17 +7,34 @@
 ## Docs:
 ```js
 /**
- * @callback onNodeClick
+ * @callback nodeCallback
  * @param {string} nodeName
  * @param {Object} nodeValue
  * @param {string} nodePath - ["path", "to", "node"] => data[path][to][nodeName] == nodeValue
  * @param {HTMLElement} nodeElement - node DOM element on the tree
  */
 /**
+ * @callback keyCallback
+ * @param {string} nodeName
+ * @param {Object} nodeValue
+ * @param {string} nodePath - ["path", "to", "node"] => data[path][to][nodeName] == nodeValue
+ * @return {string} - HTML string to replace the node element
+ */
+/**
+ * @callback valueCallback
+ * @param {Object} nodeValue
+ * @param {string} nodePath - ["path", "to", "node"] => data[path][to][node] == nodeValue
+ * @return {string} - HTML string to replace the node element
+ */
+/**
  * @typedef {Object} JSONViewerOptions
- * @property {onNodeClick} nodeClickCallback - callback function to be called when a node (key) is clicked
+ * @property {nodeCallback} nodeClickCallback - callback function to be called when a node (key) is clicked
+ * @property {keyCallback} keyMapCallback - every key in the tree is passed to this callback, which returns an html string to replace the key element
+ * @property {valueCallback} valueMapCallback - every value in the tree is passed to this callback, which returns an html string to replace the value element
  * @property {string} maxKeyWidth - max width of a key node (css string), overflow will be hidden. default: "100%"
  * @property {string} maxValueWidth - max width of a value node (css string), overflow will craete a new line. default: "100%"
+ * @property {number} defaultDepth - default depth of the tree. default: 1
+ * @property {boolean} defaultAdvanced - default state of the advanced search. default: false
  */
 /**
  * @param {Object|string} data - Object / JSON string to be displayed
@@ -134,8 +151,8 @@ JSONViewer.collapseAll();
 ```
 
 ## CDNs:
- - `<script src="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.15/src/jsonviewer.min.js"></script>`
- - `<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.15/src/jsonviewer.min.css">`
+ - `<script src="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.16/src/jsonviewer.min.js"></script>`
+ - `<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.16/src/jsonviewer.min.css">`
 
 
 ## [Filtering](FILTER.md)

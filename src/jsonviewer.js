@@ -47,6 +47,8 @@ class JSONViewer {
     #currentData;
     #options;
     #advancedSearch = false;
+    #keyMapCallback;
+    #valueMapCallback;
     static #instances = {};
     static #arrow_right = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAGxJREFUSEtjZKAxYKSx+QyjFhAM4ZEVRA4MDAwHCIYJmgJSgmg/AwNDI6mWkGqBKQMDgw8plpBqASiYvpJiCTkWgEKZaEsGpQVEux7kVVJ9QPNIpmkypXlGIzUTg9WTEgejFpAVAgQ1Df04AABMSBYZWnttmAAAAABJRU5ErkJggg==";
     static #play_circle = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAXpJREFUSEu1lX9RxEAMhd854ByAAkDBgQLAATjAAXdSUAAoAAmgAE4BoADmY5JOSH+knU73z+5uvpeXNLvSwmu1cHyNBRxKOpZ0YoJeJb1J+qgEVoBLSXchcI4HaCfpsQ/UBziQ9CDpzJQS4EUSAVlkwh4CyIy9K0lfGdQFIPizBUHdtrCBfbIEfp4hXQDUbCSdBsWV1WRCxtwF0qwM8INjlGeoZ4JVTU0yIHocA+D3hRW05XM4yP0fy/7vcwTQiu8WJPsOgLrQljdmRZdtnsWRt3AEuD14iJc5AwC+sABQzsaFNDZFgNPXAxcjlOBA4j9AB35GF+YAviVdTwFMsehe0u1Ui8YUeW+qc43cusEic6jVZnbTxwIBqjb1UdJqUz4s/qMBmTMqnkxk76hgg1YDwpTEEsbG0HLfeR+w8p+FQ+Oa/mboURcf1wRhAfe6MLpRTsuOGtdRLTVBIQG7FkD2Jz84ORgtjNL4ZJLZ7CezsL/ert7kOkJx4hdvXWgZmZakXgAAAABJRU5ErkJggg==";
@@ -86,15 +88,30 @@ class JSONViewer {
     }
 
     /**
-     * @callback onNodeClick
+     * @callback nodeCallback
      * @param {string} nodeName
      * @param {Object} nodeValue
      * @param {string} nodePath - ["path", "to", "node"] => data[path][to][nodeName] == nodeValue
      * @param {HTMLElement} nodeElement - node DOM element on the tree
      */
     /**
+     * @callback keyCallback
+     * @param {string} nodeName
+     * @param {Object} nodeValue
+     * @param {string} nodePath - ["path", "to", "node"] => data[path][to][nodeName] == nodeValue
+     * @return {string} - HTML string to replace the node element
+     */
+    /**
+     * @callback valueCallback
+     * @param {Object} nodeValue
+     * @param {string} nodePath - ["path", "to", "node"] => data[path][to][node] == nodeValue
+     * @return {string} - HTML string to replace the node element
+     */
+    /**
      * @typedef {Object} JSONViewerOptions
-     * @property {onNodeClick} nodeClickCallback - callback function to be called when a node (key) is clicked
+     * @property {nodeCallback} nodeClickCallback - callback function to be called when a node (key) is clicked
+     * @property {keyCallback} keyMapCallback - every key in the tree is passed to this callback, which returns an html string to replace the key element. default: keep the key as is.
+     * @property {valueCallback} valueMapCallback - every terminal value in the tree is passed to this callback, which returns an html string to replace the value element. default: JSONViewer.linkify
      * @property {string} maxKeyWidth - max width of a key node (css string), overflow will be hidden. default: "100%"
      * @property {string} maxValueWidth - max width of a value node (css string), overflow will craete a new line. default: "100%"
      * @property {number} defaultDepth - default depth of the tree. default: 1
@@ -119,6 +136,8 @@ class JSONViewer {
 
         var defaultDepth = this.#options.defaultDepth ? this.#options.defaultDepth : 1;
         this.#advancedSearch = this.#options.defaultAdvanced ? this.#options.defaultAdvanced : false;
+        this.#keyMapCallback = this.#options.keyMapCallback ? this.#options.keyMapCallback : (key) => { return key; };
+        this.#valueMapCallback = this.#options.valueMapCallback ? this.#options.valueMapCallback : JSONViewer.linkify;
 
         this.#container.addClass("json-viewer-container");
         this.#container.attr("tabindex", "0");
@@ -522,7 +541,7 @@ class JSONViewer {
                 
                     var nodeKey = document.createElement("span");
                     nodeKey.classList.add("nodeKey");
-                    nodeKey.innerHTML = key;
+                    nodeKey.innerHTML = this.#keyMapCallback(key, data[key], path.concat(key));
                 
                 nodeBody.appendChild(nodeKey);
 
@@ -545,7 +564,8 @@ class JSONViewer {
                     var nodeValue = document.createElement("span");
                     nodeValue.classList.add("nodeValue");
                     nodeValue.classList.add(typeof data[key]);
-                    nodeValue.innerHTML = JSONViewer.#linkify(data[key]);
+                    // nodeValue.innerHTML = JSONViewer.linkify(data[key]);
+                    nodeValue.innerHTML = this.#valueMapCallback(data[key], path.concat([key]));
 
                 nodeBody.appendChild(nodeValue);
             }
@@ -571,7 +591,7 @@ class JSONViewer {
         return $(node).attr("data-path").split("/");
     }
 
-    static #linkify(text) {
+    static linkify(text) {
         if (typeof text !== "string") {
             return text;
         }
