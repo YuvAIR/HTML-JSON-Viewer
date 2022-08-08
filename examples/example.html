@@ -16,7 +16,12 @@
                     return `<button onclick='alert(\`${key} at [${path}] with value: ${JSON.stringify(value)}\`)' style="margin: 0px; padding: 10px;">${key}</button>`;
                 },
                 valueMapCallback: function (value, path) {
-                    return `<a href="https://www.google.com/search?q=${value}">${value}</a>`;
+                    // return `<a href="https://www.google.com/search?q=${value}">${value}</a>`;
+                    return new Promise(function (resolve, reject) {
+                        setTimeout(function () {
+                            resolve(`<a href="https://www.google.com/search?q=${value}">${value}</a>`);
+                        }, 1000);
+                    });
                 }
             });
 

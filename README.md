@@ -18,13 +18,13 @@
  * @param {string} nodeName
  * @param {Object} nodeValue
  * @param {string} nodePath - ["path", "to", "node"] => data[path][to][nodeName] == nodeValue
- * @return {string} - HTML string to replace the node element
+ * @return {string|Promise<string>} - HTML string to replace the node element
  */
 /**
  * @callback valueCallback
  * @param {Object} nodeValue
  * @param {string} nodePath - ["path", "to", "node"] => data[path][to][node] == nodeValue
- * @return {string} - HTML string to replace the node element
+ * @return {string|Promise<string>} - HTML string to replace the node element
  */
 /**
  * @typedef {Object} JSONViewerOptions
@@ -151,8 +151,8 @@ JSONViewer.collapseAll();
 ```
 
 ## CDNs:
- - `<script src="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.16/src/jsonviewer.min.js"></script>`
- - `<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.16/src/jsonviewer.min.css">`
+ - `<script src="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.17/src/jsonviewer.min.js"></script>`
+ - `<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.17/src/jsonviewer.min.css">`
 
 
 ## [Filtering](FILTER.md)

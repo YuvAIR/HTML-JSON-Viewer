@@ -99,13 +99,13 @@ class JSONViewer {
      * @param {string} nodeName
      * @param {Object} nodeValue
      * @param {string} nodePath - ["path", "to", "node"] => data[path][to][nodeName] == nodeValue
-     * @return {string} - HTML string to replace the node element
+     * @return {string|Promise<string>} - HTML string to replace the node element
      */
     /**
      * @callback valueCallback
      * @param {Object} nodeValue
      * @param {string} nodePath - ["path", "to", "node"] => data[path][to][node] == nodeValue
-     * @return {string} - HTML string to replace the node element
+     * @return {string|Promise<string>} - HTML string to replace the node element
      */
     /**
      * @typedef {Object} JSONViewerOptions
@@ -494,7 +494,7 @@ class JSONViewer {
      * @param {Object|string} data
      * @param {boolean} keepOldData - if true, only the tree would be updated, but the old data is kept. (shouldn't really be used by the user)
      */
-    updateTree(data, keepOldData=false) {
+    async updateTree(data, keepOldData=false) {
         this.#verticalLines = [];
         this.#topVerticalLines = [];
         this.#shown = [];
@@ -504,29 +504,29 @@ class JSONViewer {
             this.#data = data;
         }
         this.#container.find(".json-viewer-tree-container").empty();
-        this.#createTree(data, this.#container.find(".json-viewer-tree-container"));
+        await this.#createTree(data, this.#container.find(".json-viewer-tree-container"));
     }
     
     /**
      * @param {Object} data
      * @param {HTMLElement} container
      */
-    #createTree(data, current_node, first=true, path=[]) {
+    async #createTree(data, current_node, first=true, path=[]) {
         current_node = $(current_node)[0];
 
         var nodes = []
         var firstCond = first && Object.keys(data).length == 1;
         for (var key in data) {
-            var node = document.createElement("div");
+            let node = document.createElement("div");
             node.classList.add("node");
             firstCond && node.classList.add("root");
             node.dataset.path = path.concat(key).join("/");
             node.dataset.key = JSON.stringify(key);
 
-                var nodeBody = document.createElement("div");
+                let nodeBody = document.createElement("div");
                 nodeBody.classList.add("nodeBody");
                 firstCond && nodeBody.classList.add("root");
-                var arrowDiv = document.createElement("div");
+                let arrowDiv = document.createElement("div");
                 arrowDiv.classList.add("arrowDiv");
 
                 if (!firstCond) {
@@ -539,9 +539,17 @@ class JSONViewer {
                     nodeBody.appendChild(arrowDiv);
                 }
                 
-                    var nodeKey = document.createElement("span");
+                    let nodeKey = document.createElement("span");
                     nodeKey.classList.add("nodeKey");
-                    nodeKey.innerHTML = this.#keyMapCallback(key, data[key], path.concat(key));
+                    nodeKey.innerHTML = key;
+                    let res = this.#keyMapCallback(key, data[key], path.concat(key));
+                    if (res.then) {
+                        res.then((newkey) => {
+                            nodeKey.innerHTML = newkey;
+                        });
+                    } else {
+                        nodeKey.innerHTML = res;
+                    }
                 
                 nodeBody.appendChild(nodeKey);
 
@@ -549,23 +557,30 @@ class JSONViewer {
 
 
             current_node.appendChild(node);
-            var isHidden = this.#shown.indexOf(JSONViewer.getNodePath(node).join("/")) == -1;
+            let isHidden = this.#shown.indexOf(JSONViewer.getNodePath(node).join("/")) == -1;
             isHidden && firstCond && this.#shown.push(JSONViewer.getNodePath(node).join("/"));
             isHidden && !firstCond && node.classList.add("hidden");
             !isHidden && arrow && (arrow.src = JSONViewer.#arrow_right);
 
             if (typeof data[key] === "object") {
-                this.#createTree(data[key], node, false, path.concat([key]));
+                await this.#createTree(data[key], node, false, path.concat([key]));
             } else {
                 arrow && arrow.remove();
                 arrowDiv.classList.add("lastArrowDiv")
                 nodeKey.classList.add("lastNodeKey");
                 
-                    var nodeValue = document.createElement("span");
+                    let nodeValue = document.createElement("span");
                     nodeValue.classList.add("nodeValue");
                     nodeValue.classList.add(typeof data[key]);
-                    // nodeValue.innerHTML = JSONViewer.linkify(data[key]);
-                    nodeValue.innerHTML = this.#valueMapCallback(data[key], path.concat([key]));
+                    nodeValue.innerHTML = data[key];
+                    let res = this.#valueMapCallback(data[key], path.concat([key]));
+                    if (res.then) {
+                        res.then((newval) => {
+                            nodeValue.innerHTML = newval;
+                        });
+                    } else {
+                        nodeValue.innerHTML = res;
+                    }
 
                 nodeBody.appendChild(nodeValue);
             }
