@@ -49,6 +49,7 @@ class JSONViewer {
     #advancedSearch = false;
     #keyMapCallback;
     #valueMapCallback;
+    #expandAll;
     static #instances = {};
     static #arrow_right = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAGxJREFUSEtjZKAxYKSx+QyjFhAM4ZEVRA4MDAwHCIYJmgJSgmg/AwNDI6mWkGqBKQMDgw8plpBqASiYvpJiCTkWgEKZaEsGpQVEux7kVVJ9QPNIpmkypXlGIzUTg9WTEgejFpAVAgQ1Df04AABMSBYZWnttmAAAAABJRU5ErkJggg==";
     static #play_circle = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAXpJREFUSEu1lX9RxEAMhd854ByAAkDBgQLAATjAAXdSUAAoAAmgAE4BoADmY5JOSH+knU73z+5uvpeXNLvSwmu1cHyNBRxKOpZ0YoJeJb1J+qgEVoBLSXchcI4HaCfpsQ/UBziQ9CDpzJQS4EUSAVlkwh4CyIy9K0lfGdQFIPizBUHdtrCBfbIEfp4hXQDUbCSdBsWV1WRCxtwF0qwM8INjlGeoZ4JVTU0yIHocA+D3hRW05XM4yP0fy/7vcwTQiu8WJPsOgLrQljdmRZdtnsWRt3AEuD14iJc5AwC+sABQzsaFNDZFgNPXAxcjlOBA4j9AB35GF+YAviVdTwFMsehe0u1Ui8YUeW+qc43cusEic6jVZnbTxwIBqjb1UdJqUz4s/qMBmTMqnkxk76hgg1YDwpTEEsbG0HLfeR+w8p+FQ+Oa/mboURcf1wRhAfe6MLpRTsuOGtdRLTVBIQG7FkD2Jz84ORgtjNL4ZJLZ7CezsL/ert7kOkJx4hdvXWgZmZakXgAAAABJRU5ErkJggg==";
@@ -116,6 +117,7 @@ class JSONViewer {
      * @property {string} maxValueWidth - max width of a value node (css string), overflow will craete a new line. default: "100%"
      * @property {number} defaultDepth - default depth of the tree. default: 1
      * @property {boolean} defaultAdvanced - default state of the advanced search. default: false
+     * @property {boolean} expandAll - expand all nodes on every tree update call (including the initial one). default: false
      */
     /**
      * @param {Object|string} data - Object / JSON string to be displayed
@@ -138,6 +140,7 @@ class JSONViewer {
         this.#advancedSearch = this.#options.defaultAdvanced ? this.#options.defaultAdvanced : false;
         this.#keyMapCallback = this.#options.keyMapCallback ? this.#options.keyMapCallback : (key) => { return key; };
         this.#valueMapCallback = this.#options.valueMapCallback ? this.#options.valueMapCallback : JSONViewer.linkify;
+        this.#expandAll = this.#options.expandAll ? this.#options.expandAll : false;
 
         this.#container.addClass("json-viewer-container");
         this.#container.attr("tabindex", "0");
@@ -562,8 +565,14 @@ class JSONViewer {
 
 
             current_node.appendChild(node);
-            let isHidden = this.#shown.indexOf(JSONViewer.getNodePath(node).join("/")) == -1;
-            isHidden && firstCond && this.#shown.push(JSONViewer.getNodePath(node).join("/"));
+            
+            let nodePath = JSONViewer.getNodePath(node).join("/");
+            if (this.#expandAll) {
+                this.#shown.push(nodePath);
+            }
+
+            let isHidden = this.#shown.indexOf(nodePath) == -1;
+            isHidden && firstCond && this.#shown.push(nodePath);
             isHidden && !firstCond && node.classList.add("hidden");
             !isHidden && arrow && (arrow.src = JSONViewer.#arrow_right);
 

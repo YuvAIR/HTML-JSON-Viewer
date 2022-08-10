@@ -35,6 +35,7 @@
  * @property {string} maxValueWidth - max width of a value node (css string), overflow will craete a new line. default: "100%"
  * @property {number} defaultDepth - default depth of the tree. default: 1
  * @property {boolean} defaultAdvanced - default state of the advanced search. default: false
+ * @property {boolean} expandAll - expand all nodes on every tree update call (including the initial one). default: false
  */
 /**
  * @param {Object|string} data - Object / JSON string to be displayed
@@ -151,8 +152,8 @@ JSONViewer.collapseAll();
 ```
 
 ## CDNs:
- - `<script src="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.18/src/jsonviewer.min.js"></script>`
- - `<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.18/src/jsonviewer.min.css">`
+ - `<script src="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.19/src/jsonviewer.min.js"></script>`
+ - `<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.19/src/jsonviewer.min.css">`
 
 
 ## [Filtering](FILTER.md)
