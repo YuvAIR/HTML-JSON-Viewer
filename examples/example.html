@@ -3,7 +3,7 @@
     <head>
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/esprima@4.0.1/dist/esprima.min.js"></script>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.min.css">
         <script src="../src/jsonviewer.js"></script>
         <link rel="stylesheet" href="../src/jsonviewer.css">
     </head>
@@ -16,12 +16,21 @@
                     return `<button onclick='alert(\`${key} at [${path}] with value: ${JSON.stringify(value)}\`)' style="margin: 0px; padding: 10px;">${key}</button>`;
                 },
                 valueMapCallback: function (value, path) {
-                    // return `<a href="https://www.google.com/search?q=${value}">${value}</a>`;
-                    return new Promise(function (resolve, reject) {
-                        setTimeout(function () {
-                            resolve(`<a href="https://www.google.com/search?q=${value}">${value}</a>`);
-                        }, 1000);
-                    });
+                    return JSONViewer.linkify(value);
+                    // return new Promise(function (resolve, reject) {
+                    //     setTimeout(function () {
+                    //         resolve(`<a href="https://www.google.com/search?q=${value}">${value}</a>`);
+                    //     }, 1000);
+                    // });
+                },
+                allowEdit: () => {return true;},
+                editOnChange: (name, prevVal, newVal, path) => {
+                    console.log(`${name} changed from ${prevVal} to ${newVal} at [${path}]`);
+                    return newVal;
+                },
+                editOnBlur: (name, newVal, path) => {
+                    console.log(`${name} changed to ${newVal} at [${path}]`);
+                    return newVal;
                 }
             });
 

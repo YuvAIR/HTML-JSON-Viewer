@@ -11,9 +11,72 @@ window.onload = function() {
         r.css('--jsonviewer-arrow', '0');
         r.css('--jsonviewer-arrow-hover', '0.175');
         r.css('--jsonviewer-highlight-color', '#ffd34f');
+    } else if (waterCSSTheme && waterCSSTheme.trim() === "#202b38") { // dark theme
+        r.css('--jsonviewer-main-color', '#ffffff');
+        r.css('--jsonviewer-link-color', '#86bcff');
+        r.css('--jsonviewer-border-color', '#cccccc');
+        r.css('--jsonviewer-background-color', '#202b38');
+        r.css('--jsonviewer-arrow', '1');
+        r.css('--jsonviewer-arrow-hover', '0.825');
+        r.css('--jsonviewer-highlight-color', '#ffd34f');
     }
 };
 
+// fix contenteditable focus on any click
+var fakeBlur = false;
+if (/AppleWebKit\/([\d.]+)/.exec(navigator.userAgent)) {
+    document.addEventListener('DOMContentLoaded', function(){
+        var fixEl = document.createElement('input');
+        fixEl.style.cssText = 'width:1px;height:1px;border:none;margin:0;padding:0; position:fixed; top:0; left:0';
+        fixEl.tabIndex = -1;
+
+        var shouldNotFocus = null;
+
+        function checkMouseEvent(e){
+            if (e.target.isContentEditable) return;
+            var range = document.caretRangeFromPoint(e.clientX, e.clientY);
+            var wouldFocus = getContentEditableRoot(range.commonAncestorContainer);
+            if (!wouldFocus || wouldFocus.contains(e.target)) return;
+            shouldNotFocus = wouldFocus;
+            setTimeout(function(){
+                shouldNotFocus = null;
+            });
+            if (e.type === 'mousedown') {
+                document.addEventListener('mousemove', checkMouseEvent, false);
+            }
+        }
+        document.addEventListener('mousedown', checkMouseEvent, false);
+        document.addEventListener('mouseup', function(){
+                document.removeEventListener('mousemove', checkMouseEvent, false);
+        }, false);
+
+        document.addEventListener('focus', function(e){
+            if (e.target !== shouldNotFocus) return;
+            if (!e.target.isContentEditable) return;
+            fakeBlur = true;
+            setTimeout(function(){
+                fakeBlur = false;
+            }, 100);
+            document.body.appendChild(fixEl);
+            fixEl.focus();
+            fixEl.setSelectionRange(0,0);
+            document.body.removeChild(fixEl);
+        }, true);
+
+    });
+}
+function getContentEditableRoot(el) {
+    if (el.nodeType === 3) el = el.parentNode;
+    if (!el.isContentEditable) return false;
+    while (el) {
+        var next = el.parentNode;
+        if (next.isContentEditable) {
+            el = next;
+            continue
+        }
+        return el;
+    }
+}
 
 $(document).on("keydown", ".json-viewer-container", function (e) {
     if (e.ctrlKey && e.key === "f") {
@@ -50,6 +113,10 @@ class JSONViewer {
     #keyMapCallback;
     #valueMapCallback;
     #expandAll;
+    #allowEdit;
+    #editOnChange;
+    #editOnBlur;
+    #editBlurOnEnter;
     static #instances = {};
     static #arrow_right = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAGxJREFUSEtjZKAxYKSx+QyjFhAM4ZEVRA4MDAwHCIYJmgJSgmg/AwNDI6mWkGqBKQMDgw8plpBqASiYvpJiCTkWgEKZaEsGpQVEux7kVVJ9QPNIpmkypXlGIzUTg9WTEgejFpAVAgQ1Df04AABMSBYZWnttmAAAAABJRU5ErkJggg==";
     static #play_circle = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAXpJREFUSEu1lX9RxEAMhd854ByAAkDBgQLAATjAAXdSUAAoAAmgAE4BoADmY5JOSH+knU73z+5uvpeXNLvSwmu1cHyNBRxKOpZ0YoJeJb1J+qgEVoBLSXchcI4HaCfpsQ/UBziQ9CDpzJQS4EUSAVlkwh4CyIy9K0lfGdQFIPizBUHdtrCBfbIEfp4hXQDUbCSdBsWV1WRCxtwF0qwM8INjlGeoZ4JVTU0yIHocA+D3hRW05XM4yP0fy/7vcwTQiu8WJPsOgLrQljdmRZdtnsWRt3AEuD14iJc5AwC+sABQzsaFNDZFgNPXAxcjlOBA4j9AB35GF+YAviVdTwFMsehe0u1Ui8YUeW+qc43cusEic6jVZnbTxwIBqjb1UdJqUz4s/qMBmTMqnkxk76hgg1YDwpTEEsbG0HLfeR+w8p+FQ+Oa/mboURcf1wRhAfe6MLpRTsuOGtdRLTVBIQG7FkD2Jz84ORgtjNL4ZJLZ7CezsL/ert7kOkJx4hdvXWgZmZakXgAAAABJRU5ErkJggg==";
@@ -74,7 +141,7 @@ class JSONViewer {
     /**
      * Get original data or the last data that was used in an `updateTree` call, with `keepOldData` set to false.
      * Note that queries call `updateTree` with `keepOldData` set to true, so this will return the original data even if a query is active.
-     * @returns {Object}
+     * @returns {object}
      */
     get data() {
         return this.#data;
@@ -82,7 +149,7 @@ class JSONViewer {
 
     /**
      * Get the currently displayed data.
-     * @returns {Object}
+     * @returns {object}
      */
     get currentData() {
         return this.#currentData;
@@ -91,36 +158,62 @@ class JSONViewer {
     /**
      * @callback nodeCallback
      * @param {string} nodeName
-     * @param {Object} nodeValue
+     * @param {object} nodeValue
      * @param {string} nodePath - ["path", "to", "node"] => data[path][to][nodeName] == nodeValue
      * @param {HTMLElement} nodeElement - node DOM element on the tree
      */
     /**
      * @callback keyCallback
      * @param {string} nodeName
-     * @param {Object} nodeValue
+     * @param {object} nodeValue
      * @param {string} nodePath - ["path", "to", "node"] => data[path][to][nodeName] == nodeValue
      * @return {string|Promise<string>} - HTML string to replace the node element
      */
     /**
      * @callback valueCallback
-     * @param {Object} nodeValue
+     * @param {object} nodeValue
      * @param {string} nodePath - ["path", "to", "node"] => data[path][to][node] == nodeValue
      * @return {string|Promise<string>} - HTML string to replace the node element
      */
     /**
-     * @typedef {Object} JSONViewerOptions
+     * @callback allowEdit
+     * @param {string} nodeName
+     * @param {string} nodeValue
+     * @param {string} nodePath - ["path", "to", "node"] => data[path][to][nodeName] == nodeValue
+     * @return {boolean|Promise<boolean>} - allow user to edit the value of the node (only for terminal nodes, thus `nodeValue` is a string and not an object)
+     */
+    /**
+     * @callback editOnChange
+     * @param {string} nodeName
+     * @param {string} previousValue
+     * @param {string} newValue
+     * @param {string} nodePath - ["path", "to", "node"] => data[path][to][nodeName] == nodeValue
+     * @return {string|Promise<string>} - value to be set in the node element (usually the same as `newValue`)
+     */
+    /**
+     * @callback editOnBlur
+     * @param {string} nodeName
+     * @param {string} newValue
+     * @param {string} nodePath - ["path", "to", "node"] => data[path][to][nodeName] == nodeValue
+     * @return {string|Promise<string>} - value to be set in the node element (usually the same as `newValue`)
+     */
+    /**
+     * @typedef {object} JSONViewerOptions
      * @property {nodeCallback} nodeClickCallback - callback function to be called when a node (key) is clicked
      * @property {keyCallback} keyMapCallback - every key in the tree is passed to this callback, which returns an html string to replace the key element. default: keep the key as is.
      * @property {valueCallback} valueMapCallback - every terminal value in the tree is passed to this callback, which returns an html string to replace the value element. default: JSONViewer.linkify
      * @property {string} maxKeyWidth - max width of a key node (css string), overflow will be hidden. default: "100%"
      * @property {string} maxValueWidth - max width of a value node (css string), overflow will craete a new line. default: "100%"
+     * @property {allowEdit} allowEdit - all terminal nodes (string values) which this callback outputs true for will be editable. default: `() => false`
+     * @property {editOnChange} editOnChange - callback function to be called when a node (value) is edited. default: `(name, prevVal, newVal, path) => prevVal`
+     * @property {editOnBlur} editOnBlur - callback function to be called when a node (value) is edited and loses focus. default: `(name, newVal, path) => newVal`
+     * @property {boolean} editBlurOnEnter - if true, the content editable value will lose focus when the user presses enter. default: true
      * @property {number} defaultDepth - default depth of the tree. default: 1
      * @property {boolean} defaultAdvanced - default state of the advanced search. default: false
      * @property {boolean} expandAll - expand all nodes on every tree update call (including the initial one). default: false
      */
     /**
-     * @param {Object|string} data - Object / JSON string to be displayed
+     * @param {object|string} data - Object / JSON string to be displayed
      * @param {HTMLElement} container - DOM element to display the tree in
      * @param {JSONViewerOptions} options
      */
@@ -140,6 +233,10 @@ class JSONViewer {
         this.#advancedSearch = this.#options.defaultAdvanced ? this.#options.defaultAdvanced : false;
         this.#keyMapCallback = this.#options.keyMapCallback ? this.#options.keyMapCallback : (key) => { return key; };
         this.#valueMapCallback = this.#options.valueMapCallback ? this.#options.valueMapCallback : JSONViewer.linkify;
+        this.#allowEdit = this.#options.allowEdit ? this.#options.allowEdit : () => { return false; };
+        this.#editOnChange = this.#options.editOnChange ? this.#options.editOnChange : (name, prevVal, newVal, path) => { return prevVal; };
+        this.#editOnBlur = this.#options.editOnBlur ? this.#options.editOnBlur : (name, newVal, path) => { return newVal; };
+        this.#editBlurOnEnter = this.#options.editBlurOnEnter ? this.#options.editBlurOnEnter : true;
         this.#expandAll = this.#options.expandAll ? this.#options.expandAll : false;
 
         this.#container.addClass("json-viewer-container");
@@ -202,15 +299,15 @@ class JSONViewer {
 
         advancedChange(search.find("input[type='checkbox']"));
 
-        if (options.maxKeyWidth) {
-            this.#container.css("--jsonviewer-max-key-width", options.maxKeyWidth);
+        if (this.#options.maxKeyWidth) {
+            this.#container.css("--jsonviewer-max-key-width", this.#options.maxKeyWidth);
         }
-        if (options.maxValueWidth) {
-            this.#container.css("--jsonviewer-max-value-width", options.maxValueWidth);
+        if (this.#options.maxValueWidth) {
+            this.#container.css("--jsonviewer-max-value-width", this.#options.maxValueWidth);
         }
         
         
-        var nodeClickCallback = options.nodeClickCallback;
+        var nodeClickCallback = this.#options.nodeClickCallback;
         this.#container.on("click", ".nodeKey", function() {
             if (!nodeClickCallback) {
                 return;
@@ -499,7 +596,7 @@ class JSONViewer {
 
     /**
      * Update the tree using new data
-     * @param {Object|string} data
+     * @param {object|string} data
      * @param {boolean} keepOldData - if true, only the tree would be updated, but the old data is kept. (shouldn't really be used by the user)
      */
     async updateTree(data, keepOldData=false) {
@@ -514,9 +611,61 @@ class JSONViewer {
         this.#container.find(".json-viewer-tree-container").empty();
         await this.#createTree(data, this.#container.find(".json-viewer-tree-container"));
     }
+
+    /**
+     * Calls `func` with args, if `func` is async, wait for result and pass to `callback`, otherwise just pass the return value to `callback`.
+     * @param {object[]} args
+     * @param {function} func
+     * @param {function} callback
+     */
+    static #maybeAsyncCallback(args, func, callback) {
+        const res = func(...args);
+        if (res == undefined) {
+            return callback();
+        }
+        if (res.then) {
+            res.then(callback);
+        } else {
+            callback(res);
+        }
+    }
+
+    /**
+     * If path is `[a, b, c]`, returns `data[a][b][c]`
+     * @param {object} data
+     * @param {string[]} path
+     * @returns {object}
+     */
+    static #getDeepValue(data, path) {
+        let pointer = data;
+        for (var i = 0; i < path.length; i++) {
+            if (pointer[path[i]] == undefined) {
+                return undefined;
+            }
+            pointer = pointer[path[i]];
+        }
+        return pointer;
+    }
+
+    /**
+     * If path is `[a, b, c]`, sets `data[a][b][c]` to `value`
+     * @param {object} data
+     * @param {string[]} path
+     * @param {object} value
+     */
+    static #setDeepValue(data, path, value) {
+        let pointer = data;
+        for (var i = 0; i < path.length - 1; i++) {
+            if (pointer[path[i]] == undefined) {
+                pointer[path[i]] = {};
+            }
+            pointer = pointer[path[i]];
+        }
+        pointer[path[path.length - 1]] = value;
+    }
     
     /**
-     * @param {Object} data
+     * @param {object} data
      * @param {HTMLElement} container
      */
     async #createTree(data, current_node, first=true, path=[]) {
@@ -524,7 +673,7 @@ class JSONViewer {
 
         var nodes = []
         var firstCond = first && Object.keys(data).length == 1;
-        for (var key in data) {
+        for (let key in data) {
             let node = document.createElement("div");
             node.classList.add("node");
             firstCond && node.classList.add("root");
@@ -550,14 +699,9 @@ class JSONViewer {
                     let nodeKey = document.createElement("span");
                     nodeKey.classList.add("nodeKey");
                     nodeKey.innerHTML = key;
-                    let res = this.#keyMapCallback(key, data[key], path.concat(key));
-                    if (res.then) {
-                        res.then((newkey) => {
-                            nodeKey.innerHTML = newkey;
-                        });
-                    } else {
-                        nodeKey.innerHTML = res;
-                    }
+                    JSONViewer.#maybeAsyncCallback([key, data[key], path.concat(key)], this.#keyMapCallback, (newkey) => {
+                        nodeKey.innerHTML = newkey;
+                    });
                 
                 nodeBody.appendChild(nodeKey);
 
@@ -587,14 +731,53 @@ class JSONViewer {
                     nodeValue.classList.add("nodeValue");
                     nodeValue.classList.add(typeof data[key]);
                     nodeValue.innerHTML = data[key];
-                    let res = this.#valueMapCallback(data[key], path.concat([key]));
-                    if (res.then) {
-                        res.then((newval) => {
-                            nodeValue.innerHTML = newval;
-                        });
-                    } else {
-                        nodeValue.innerHTML = res;
+                    JSONViewer.#maybeAsyncCallback([data[key], path.concat([key])], this.#valueMapCallback, (newval) => {
+                        nodeValue.innerHTML = newval;
+                    });
+
+                    const jsonThis = this;
+                    function editable() {
+                        nodeValue.contentEditable = true;
+                        nodeValue.classList.add("editable");
+
+                        nodeValue.onkeydown = function(e) {
+                            if (e.key === "Enter") {
+                                nodeValue.blur();
+                            }
+                        };
+
+                        nodeValue.oninput = () => {
+                            const newPath = path.concat([key]);
+                            const currentValue = nodeValue.innerHTML;
+                            const previousValue = JSONViewer.#getDeepValue(jsonThis.#data, newPath);
+                            JSONViewer.#maybeAsyncCallback([key, previousValue, currentValue, newPath], jsonThis.#editOnChange, (newVal) => {
+                                if (newVal != currentValue) {
+                                    nodeValue.innerHTML = newVal;
+                                    nodeValue.focus();
+                                }
+                                JSONViewer.#setDeepValue(jsonThis.#data, newPath, newVal);
+                                JSONViewer.#setDeepValue(jsonThis.#currentData, newPath, newVal);
+                            });
+                        };
+
+                        nodeValue.onblur = () => {
+                            if (!fakeBlur) {
+                                const newPath = path.concat([key]);
+                                const currentValue = nodeValue.innerHTML;
+                                JSONViewer.#maybeAsyncCallback([key, currentValue, newPath], jsonThis.#editOnBlur, (newval) => {
+                                    nodeValue.innerHTML = newval;
+                                    nodeValue.blur();
+                                    JSONViewer.#setDeepValue(jsonThis.#data, newPath, newval);
+                                    JSONViewer.#setDeepValue(jsonThis.#currentData, newPath, newval);
+                                });
+                            }
+                        };
                     }
+
+                    JSONViewer.#maybeAsyncCallback([key, data[key], path.concat([key])], this.#allowEdit, (allow) => {
+                        allow && editable();
+                    });
+
 
                 nodeBody.appendChild(nodeValue);
             }

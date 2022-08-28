@@ -9,37 +9,63 @@
 /**
  * @callback nodeCallback
  * @param {string} nodeName
- * @param {Object} nodeValue
+ * @param {object} nodeValue
  * @param {string} nodePath - ["path", "to", "node"] => data[path][to][nodeName] == nodeValue
  * @param {HTMLElement} nodeElement - node DOM element on the tree
  */
 /**
  * @callback keyCallback
  * @param {string} nodeName
- * @param {Object} nodeValue
+ * @param {object} nodeValue
  * @param {string} nodePath - ["path", "to", "node"] => data[path][to][nodeName] == nodeValue
  * @return {string|Promise<string>} - HTML string to replace the node element
  */
 /**
  * @callback valueCallback
- * @param {Object} nodeValue
+ * @param {object} nodeValue
  * @param {string} nodePath - ["path", "to", "node"] => data[path][to][node] == nodeValue
  * @return {string|Promise<string>} - HTML string to replace the node element
  */
 /**
- * @typedef {Object} JSONViewerOptions
+ * @callback allowEdit
+ * @param {string} nodeName
+ * @param {string} nodeValue
+ * @param {string} nodePath - ["path", "to", "node"] => data[path][to][nodeName] == nodeValue
+ * @return {boolean|Promise<boolean>} - allow user to edit the value of the node (only for terminal nodes, thus `nodeValue` is a string and not an object)
+ */
+/**
+ * @callback editOnChange
+ * @param {string} nodeName
+ * @param {string} previousValue
+ * @param {string} newValue
+ * @param {string} nodePath - ["path", "to", "node"] => data[path][to][nodeName] == nodeValue
+ * @return {string|Promise<string>} - value to be set in the node element (usually the same as `newValue`)
+ */
+/**
+ * @callback editOnBlur
+ * @param {string} nodeName
+ * @param {string} newValue
+ * @param {string} nodePath - ["path", "to", "node"] => data[path][to][nodeName] == nodeValue
+ * @return {string|Promise<string>} - value to be set in the node element (usually the same as `newValue`)
+ */
+/**
+ * @typedef {object} JSONViewerOptions
  * @property {nodeCallback} nodeClickCallback - callback function to be called when a node (key) is clicked
- * @property {keyCallback} keyMapCallback - every key in the tree is passed to this callback, which returns an html string to replace the key element
- * @property {valueCallback} valueMapCallback - every value in the tree is passed to this callback, which returns an html string to replace the value element
+ * @property {keyCallback} keyMapCallback - every key in the tree is passed to this callback, which returns an html string to replace the key element. default: keep the key as is.
+ * @property {valueCallback} valueMapCallback - every terminal value in the tree is passed to this callback, which returns an html string to replace the value element. default: JSONViewer.linkify
  * @property {string} maxKeyWidth - max width of a key node (css string), overflow will be hidden. default: "100%"
  * @property {string} maxValueWidth - max width of a value node (css string), overflow will craete a new line. default: "100%"
+ * @property {allowEdit} allowEdit - all terminal nodes (string values) which this callback outputs true for will be editable. default: `() => false`
+ * @property {editOnChange} editOnChange - callback function to be called when a node (value) is edited. default: `(name, prevVal, newVal, path) => prevVal`
+ * @property {editOnBlur} editOnBlur - callback function to be called when a node (value) is edited and loses focus. default: `(name, newVal, path) => newVal`
+ * @property {boolean} editBlurOnEnter - if true, the content editable value will lose focus when the user presses enter. default: true
  * @property {number} defaultDepth - default depth of the tree. default: 1
  * @property {boolean} defaultAdvanced - default state of the advanced search. default: false
  * @property {boolean} expandAll - expand all nodes on every tree update call (including the initial one). default: false
  */
 /**
- * @param {Object|string} data - Object / JSON string to be displayed
- * @param {HTMLElement} container - DOM element to display the tree in, SHOULD HAVE A UNIQUE ID
+ * @param {object|string} data - Object / JSON string to be displayed
+ * @param {HTMLElement} container - DOM element to display the tree in
  * @param {JSONViewerOptions} options
  */
 class JSONViewer(data, container, options);
@@ -71,7 +97,7 @@ static JSONViewer.getInstanceByContainer(container);
 
 /**
  * Update the tree using new data
- * @param {Object|string} data 
+ * @param {object|string} data 
  */
 JSONViewer.updateTree(data);
 
