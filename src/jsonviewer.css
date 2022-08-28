@@ -315,3 +315,40 @@ button {
     background-color: var(--jsonviewer-highlight-color);
 }
 
+.CodeMirror.cm-s-material {
+    background-color: var(--background) !important;
+    border-radius: 6px;
+    width: calc(100% - 30px);
+    height: auto;
+    padding: 0px;
+    vertical-align: center;
+}
+
+.CodeMirror * {
+    font-size: 16px;
+}
+
+.CodeMirror-scroll {
+    width: 100% !important;
+}
+
+.CodeMirror-sizer {
+    min-height: auto !important;
+    padding: 3.813px !important;
+    height: auto !important;
+    border: none !important;
+}
+
+.CodeMirror-lines {
+    padding: 0px !important;
+}
+
+.CodeMirror-line {
+    height: auto !important;
+}
+
+.CodeMirror-vscrollbar {
+    width: 0px !important;
+}
+
+

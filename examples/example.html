@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> -->
         <script src="https://cdn.jsdelivr.net/npm/esprima@4.0.1/dist/esprima.min.js"></script>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
+        <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css"> -->
+        <script src="../src/codemirror.js"></script>
+        <script src="../src/codemirror_integration.bundle.js"></script>
         <script src="../src/jsonviewer.js"></script>
+        
         <link rel="stylesheet" href="../src/jsonviewer.css">
     </head>
     <body>
@@ -22,7 +25,8 @@
                             resolve(`<a href="https://www.google.com/search?q=${value}">${value}</a>`);
                         }, 1000);
                     });
-                }
+                },
+                defaultAdvanced: true,
             });
 
             // setTimeout(() => {

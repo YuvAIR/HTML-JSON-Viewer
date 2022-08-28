@@ -1,6 +1,241 @@
-// Requires jQuery and Water CSS is recommended, will look terrible otherwise
+'use strict'
+
+
+const ExcludedAutocompleteKeyNames = new Set([
+    ' ',
+    'Backspace',
+    'Tab',
+    'Enter',
+    'Shift',
+    'Ctrl',
+    'Alt',
+    'Pause',
+    'CapsLock',
+    'Escape',
+    'PageUp',
+    'PageDown',
+    'End',
+    'Home',
+    'ArrowLeft',
+    'ArrowUp',
+    'ArrowRight',
+    'ArrowDown',
+    'Insert',
+    'Delete',
+    'Meta',
+    'Select',
+    '+',
+    '-',
+    '/',
+    'F1',
+    'F2',
+    'F3',
+    'F4',
+    'F5',
+    'F6',
+    'F7',
+    'F8',
+    'F9',
+    'F10',
+    'F11',
+    'F12',
+    'NumLock',
+    'ScrollLock',
+    ';',
+    '=',
+    ',',
+    '`',
+    '\\',
+    '\'',
+    '"',
+    '!',
+    '%',
+    '^',
+    '&',
+    '(',
+    ')',
+    '|'
+]);
+
+
+// const {keymap, EditorView} = CM["@codemirror/view"];
+// const {defaultKeymap, history, historyKeymap} = CM["@codemirror/commands"];
+// const {syntaxTree, syntaxHighlighting, defaultHighlightStyle} = CM["@codemirror/language"];
+// const {javascript} = CM["@codemirror/lang-javascript"];
+
+// const materialDark = window.materialDark.materialDark;
+
+function addScript(url) {
+    var script = document.createElement('script');
+    script.type = 'text/javascript';
+    document.getElementsByTagName('head')[0].appendChild(script);
+    var resolve;
+    var promise = new Promise(function (resolve_) {
+        resolve = resolve_;
+    });
+    script.onload = resolve;
+    script.src = url;
+    return promise;
+}
+
+function addStyle(url) {
+    var link = document.createElement('link');
+    link.rel = 'stylesheet';
+    document.getElementsByTagName('head')[0].appendChild(link);
+    var resolve;
+    var promise = new Promise(function (resolve_) {
+        resolve = resolve_;
+    });
+    link.onload = resolve;
+    link.href = url;
+    return promise;
+}
+
+async function includeDependencies(callback) {
+    // jQuery
+    if (typeof jQuery === 'undefined') {
+        await addScript('https://code.jquery.com/jquery-3.6.0.min.js');
+    }
+    // Water CSS
+    var root = document.querySelector(':root');
+    var prop = getComputedStyle(root).getPropertyValue('--background-body');
+    if (!prop || prop.trim() === "") {   
+        await addStyle('https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css');
+    }
+    // CodeMirror
+    if (typeof CodeMirror === 'undefined') {
+        await addScript('https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.js');
+
+        await addScript('https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/hint/show-hint.min.js');
+        await addScript('https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/hint/javascript-hint.min.js');
+        await addScript('https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/javascript/javascript.min.js');
+        await addScript('https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/edit/closebrackets.min.js');
+
+        await addStyle('https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.css');
+        await addStyle('https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/hint/show-hint.min.css');
+        await addStyle('https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/theme/material.min.css');
+    }
+
+
+    function getWord(cm, line, ch) {
+        var word = cm.findWordAt({line: line, ch: ch});
+        return {word: cm.getRange({line: line, ch: word.anchor.ch}, {line: line, ch: word.head.ch}), start: word.anchor.ch, end: word.head.ch};
+    }
+
+    
+    var orig = CodeMirror.hint.javascript;
+    CodeMirror.hint.javascript = function (cm, options) {
+        if (options.rec) {
+            return orig(cm, options);
+        }
+        options.rec = true;
+        var inner = orig(cm, options) || {from: cm.getCursor(), to: cm.getCursor(), list: []};
+        var line = cm.getCursor().line;
+        var cursor_ch = cm.getCursor().ch;
+
+        var words = []
+        var prev_start = -1;
+        for (var ch = 0; ch <= cursor_ch-1; ch++) {
+            var word = getWord(cm, line, ch);
+            if (word.start != prev_start) {
+                words.push(word.word);
+                prev_start = word.start;
+            }
+        }
+
+        var x = words.pop();
+        var y = words.pop();
+        var z = words.pop();
+        
+        if (x === '.' && y === 'this' || y === '.' && z === 'this') {
+            inner.list.push({text: 'has()', displayText: 'has()', className: 'autocomplete-method'});
+            inner.list.push({text: 'hasKey()', displayText: 'hasKey()', className: 'autocomplete-method'});
+            inner.list.push({text: 'hasValue()', displayText: 'hasValue()', className: 'autocomplete-method'});
+            inner.list.push({text: 'length()', displayText: 'length()'});
+
+            if (options.path && options.data) {
+                var data = options.data;
+                if (Object.keys(data).length === 1) {
+                    data = data[Object.keys(data)[0]];
+                }
+                var path = options.path.split('.');
+
+                function addHints(curr, path, index) {
+                    if (index === path.length) {
+                        for (const key in curr) {
+                            inner.list.push({text: key, displayText: key, className: 'autocomplete-property'});
+                        }
+                    }
+
+                    var p = path[index];
+                    if (p === '*') {
+                        for (const key in curr) {
+                            addHints(curr[key], path, index + 1);
+                        }
+                    } else {
+                        curr[p] && addHints(curr[p], path, index + 1);
+                    }
+                }
+
+                addHints(data, path, 0);
+            }
+
+
+            var new_list = [];
+            for (var i = 0; i < inner.list.length; i++) {
+                var add = true;
+                for (var j = 0; j < i; j++) {
+                    if (inner.list[i].text === inner.list[j].text) {
+                        add = false;
+                        break;
+                    }
+                }
+                
+                if (y === '.') {
+                    if (!inner.list[i].text.includes(x)) {
+                        add = false;
+                    }
+                }
+                
+                if (add) {
+                    new_list.push(inner.list[i]);
+                }
+            }
+
+            new_list.sort(function (a, b) {
+                if (y === '.') {
+                    return a.text.indexOf(x) - b.text.indexOf(x);
+                } else if (a.className !== b.className) {
+                    return a.className === 'autocomplete-method' ? 1 : -1;
+                } else {
+                    return a.text.localeCompare(b.text);
+                }
+            });
+
+            inner.list = new_list;
+
+            CodeMirror.on(inner, 'pick', function (picked) {
+                if (picked.className === 'autocomplete-method') {
+                    // move cursor:
+                    cm.setCursor({line: line, ch: cm.getCursor().ch - 1});
+                }
+            });
+        }
+        return inner;
+    };
+
+    CodeMirror.commands.autocomplete = function(cm, data, path) {
+        // cm.showHint({hint: CodeMirror.hint.javascript}, {rec: false, data: data, path: path});
+        CodeMirror.showHint(cm, CodeMirror.hint.javascript, {rec: false, data: data, path: path});
+    }
+
+    typeof callback === 'function' && callback();
+}
+
+document.addEventListener("DOMContentLoaded", includeDependencies);
 
 window.onload = function() {
+
     var r = $(':root');
     var waterCSSTheme = r.css('--background-body');
     if (waterCSSTheme && waterCSSTheme.trim() === "#fff") { // light theme
@@ -11,31 +246,40 @@ window.onload = function() {
         r.css('--jsonviewer-arrow', '0');
         r.css('--jsonviewer-arrow-hover', '0.175');
         r.css('--jsonviewer-highlight-color', '#ffd34f');
+    } else if (waterCSSTheme && waterCSSTheme.trim() === "#202b38") { // dark theme
+        r.css('--jsonviewer-main-color', '#ffffff');
+        r.css('--jsonviewer-link-color', '#86bcff');
+        r.css('--jsonviewer-border-color', '#cccccc');
+        r.css('--jsonviewer-background-color', '#202b38');
+        r.css('--jsonviewer-arrow', '1');
+        r.css('--jsonviewer-arrow-hover', '0.825');r
     }
+
+
+
+    $(document).on("keydown", ".json-viewer-container", function (e) {
+        if (e.ctrlKey && e.key === "f") {
+            e.preventDefault();
+            
+            JSONViewer.getInstanceByContainer(this).toggleSearch();
+        }
+    })
+    
+    $(document).on("keydown", ".json-viewer-container .json-viewer-search input", function (e) {
+        if (!e.ctrlKey && !e.shiftKey && e.key === "Enter") {
+            e.preventDefault();
+            e.target.parentElement.getElementsByClassName("json-viewer-filter-button")[0].click();
+        }
+    });
+    
+    $(document).on("keyup", ".json-viewer-container .json-viewer-search", function (e) {
+        if (!e.ctrlKey && !e.shiftKey && e.key === "Escape" && document.activeElement.tagName !== "TEXTAREA") {
+            JSONViewer.getInstanceByContainer(this.parentElement).toggleSearch("hide");
+        }
+    });
 };
 
 
-$(document).on("keydown", ".json-viewer-container", function (e) {
-    if (e.ctrlKey && e.key === "f") {
-        e.preventDefault();
-        
-        JSONViewer.getInstanceByContainer(this).toggleSearch();
-    }
-})
-
-$(document).on("keydown", ".json-viewer-container .json-viewer-search input", function (e) {
-    if (!e.ctrlKey && !e.shiftKey && e.key === "Enter") {
-        e.preventDefault();
-        e.target.parentElement.getElementsByClassName("json-viewer-filter-button")[0].click();
-    }
-});
-
-$(document).on("keydown", ".json-viewer-container .json-viewer-search", function (e) {
-    if (!e.ctrlKey && !e.shiftKey && e.key === "Escape") {
-        // e.target.parentElement.getElementsByClassName("json-viewer-close-search")[0].click();
-        JSONViewer.getInstanceByContainer(this.parentElement).toggleSearch("hide");
-    }
-});
 
 
 class JSONViewer {
@@ -50,9 +294,13 @@ class JSONViewer {
     #keyMapCallback;
     #valueMapCallback;
     #expandAll;
+    #autocompleteActive = true;
+    #codeMirror;
     static #instances = {};
     static #arrow_right = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAGxJREFUSEtjZKAxYKSx+QyjFhAM4ZEVRA4MDAwHCIYJmgJSgmg/AwNDI6mWkGqBKQMDgw8plpBqASiYvpJiCTkWgEKZaEsGpQVEux7kVVJ9QPNIpmkypXlGIzUTg9WTEgejFpAVAgQ1Df04AABMSBYZWnttmAAAAABJRU5ErkJggg==";
     static #play_circle = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAXpJREFUSEu1lX9RxEAMhd854ByAAkDBgQLAATjAAXdSUAAoAAmgAE4BoADmY5JOSH+knU73z+5uvpeXNLvSwmu1cHyNBRxKOpZ0YoJeJb1J+qgEVoBLSXchcI4HaCfpsQ/UBziQ9CDpzJQS4EUSAVlkwh4CyIy9K0lfGdQFIPizBUHdtrCBfbIEfp4hXQDUbCSdBsWV1WRCxtwF0qwM8INjlGeoZ4JVTU0yIHocA+D3hRW05XM4yP0fy/7vcwTQiu8WJPsOgLrQljdmRZdtnsWRt3AEuD14iJc5AwC+sABQzsaFNDZFgNPXAxcjlOBA4j9AB35GF+YAviVdTwFMsehe0u1Ui8YUeW+qc43cusEic6jVZnbTxwIBqjb1UdJqUz4s/qMBmTMqnkxk76hgg1YDwpTEEsbG0HLfeR+w8p+FQ+Oa/mboURcf1wRhAfe6MLpRTsuOGtdRLTVBIQG7FkD2Jz84ORgtjNL4ZJLZ7CezsL/ert7kOkJx4hdvXWgZmZakXgAAAABJRU5ErkJggg==";
+
+
 
     /**
      * Returns the JSONViewer object for the given container - note that the container IDs must be unique.
@@ -87,6 +335,17 @@ class JSONViewer {
     get currentData() {
         return this.#currentData;
     }
+
+    get #queryPath() {
+        var search = this.#container.find('.json-viewer-search');
+        return search.find("input").eq(0).val();
+    }
+
+    get #queryRule() {
+        var search = this.#container.find('.json-viewer-search');
+        return this.#advancedSearch ? this.#codeMirror.state.doc.toString() : search.find("input").eq(1).val();
+    }
+
 
     /**
      * @callback nodeCallback
@@ -125,114 +384,184 @@ class JSONViewer {
      * @param {JSONViewerOptions} options
      */
     constructor(data, container, options) {
-        data = typeof data === "string" ? JSON.parse(data) : data;
-        this.#verticalLines = [];
-        this.#topVerticalLines = [];
-        this.#shown = [];
-        this.#container = $(container);
-        this.#data = data;
-        this.#currentData = data;
-        this.#options = options ? options : {};
+        includeDependencies(() => {
+            data = typeof data === "string" ? JSON.parse(data) : data;
+            this.#verticalLines = [];
+            this.#topVerticalLines = [];
+            this.#shown = [];
+            this.#container = $(container);
+            this.#data = data;
+            this.#currentData = data;
+            this.#options = options ? options : {};
 
-        JSONViewer.#instances[$(container)[0].id] = this;
+            JSONViewer.#instances[$(container)[0].id] = this;
 
-        var defaultDepth = this.#options.defaultDepth ? this.#options.defaultDepth : 1;
-        this.#advancedSearch = this.#options.defaultAdvanced ? this.#options.defaultAdvanced : false;
-        this.#keyMapCallback = this.#options.keyMapCallback ? this.#options.keyMapCallback : (key) => { return key; };
-        this.#valueMapCallback = this.#options.valueMapCallback ? this.#options.valueMapCallback : JSONViewer.linkify;
-        this.#expandAll = this.#options.expandAll ? this.#options.expandAll : false;
+            var defaultDepth = this.#options.defaultDepth ? this.#options.defaultDepth : 1;
+            this.#advancedSearch = this.#options.defaultAdvanced ? this.#options.defaultAdvanced : false;
+            this.#keyMapCallback = this.#options.keyMapCallback ? this.#options.keyMapCallback : (key) => { return key; };
+            this.#valueMapCallback = this.#options.valueMapCallback ? this.#options.valueMapCallback : JSONViewer.linkify;
+            this.#expandAll = this.#options.expandAll ? this.#options.expandAll : false;
 
-        this.#container.addClass("json-viewer-container");
-        this.#container.attr("tabindex", "0");
+            this.#container.addClass("json-viewer-container");
+            this.#container.attr("tabindex", "0");
 
-        var search = $("<div class='json-viewer-search hidden' tabindex='0'></div>");
-        search.append($("<button class='json-viewer-close-search'>&times;</button>").click(this.toggleSearch.bind(this, "hide")));
-        search.append($("<input type='text' placeholder='Query' title='Filter query.'></input>"));
-        search.append($(`<input type='number' placeholder='Depth' title='Depth of the desired filtered nodes (count starts at 0)' value='${defaultDepth}'></input>`).change((e) => {
-            if (e.target.type == "number") {
-                e.target.value = (e.target.valueAsNumber || 0);
+            var search = $("<div class='json-viewer-search hidden' tabindex='0'></div>");
+            search.append($("<button class='json-viewer-close-search'>&times;</button>").click(this.toggleSearch.bind(this, "hide")));
+            search.append($("<input type='text' placeholder='Query' title='Filter query.'></input>"));
+            search.append($(`<input type='number' placeholder='Depth' title='Depth of the desired filtered nodes (count starts at 0)' value='${defaultDepth}'></input>`).change((e) => {
+                if (e.target.type == "number") {
+                    e.target.value = (e.target.valueAsNumber || 0);
+                }
+            }));
+
+            var jsonThis = this;
+            function advancedChange(target) {
+                target = $(target)[0];
+                jsonThis.#advancedSearch = target.checked;
+                if (target.checked) {
+                    target.parentElement.children[1].placeholder = "Path (e.g. `path.*.to.node.*`)";
+                    target.parentElement.children[2].placeholder = 'Rule (e.g. `this.someChild.has("value")`, where `this` is the last node in the path)';
+                    target.parentElement.children[1].title = "Filter path";
+                    target.parentElement.children[2].title = "Filter rule (JS-like)";
+                    target.parentElement.children[2].type = "text";
+                    // target.parentElement.children[1].value = "";
+                    target.parentElement.children[2].value = "";
+
+                    if (jsonThis.#codeMirror) {
+                        jsonThis.#codeMirror.setValue("");
+                        return;
+                    }
+                    jsonThis.#codeMirror = window.editorViewFromElement(target.parentElement);
+
+
+                    return;
+                    jsonThis.#codeMirror = CodeMirror.fromTextArea(target.parentElement.children[2], {
+                        lineNumbers: false,
+                        styleActiveLine: false,
+                        matchBrackets: true,
+                        autoCloseBrackets: true,
+                        mode: {
+                            name: "javascript",
+                            globalVars: true
+                        },
+                        theme: "material",
+                        extraKeys: {
+                            "Ctrl-Space": "autocomplete"
+                        },
+                        hintOptions: {
+                            completeSingle: false
+                        }
+                    });
+
+                    jsonThis.#codeMirror.setOption("this", "somestring");
+
+                    
+
+                    jsonThis.#codeMirror.on("keyup", function (cm, event) {
+                        if (!cm.state.completionActive && jsonThis.#autocompleteActive) {
+                            if (!ExcludedAutocompleteKeyNames.has(event.key) && !event.ctrlKey && !event.altKey) {
+                                var line = cm.getLine(cm.getCursor().line);
+                                var cursor = cm.getCursor().ch;
+                                var lastWord = line.substring(0, cursor-1).split(new RegExp("\\s|\\.|\\" + Array.from(ExcludedAutocompleteKeyNames).filter(x => x.length == 1).join("|\\"))).pop();
+                                if (parseFloat(lastWord).toString() === lastWord || (cursor === 0)) {
+                                    return;
+                                }
+
+                                CodeMirror.commands.autocomplete(cm, jsonThis.#data, jsonThis.#queryPath);
+                            } else if (event.key == "Escape") {
+                                jsonThis.#autocompleteActive = false;
+                            }
+                        } else {
+                            if ((event.key == "Space" && event.ctrlKey) || event.key == '.') {
+                                jsonThis.#autocompleteActive = true;
+                                CodeMirror.commands.autocomplete(cm, jsonThis.#data, jsonThis.#queryPath);
+                            }
+                        }
+                    });
+
+                    jsonThis.#codeMirror.on("beforeChange", function(cm, changeObj) {
+                        var typedNewLine = changeObj.origin == '+input' && typeof changeObj.text == "object" && changeObj.text.join("") == "";
+                        if (typedNewLine) {
+                            return changeObj.cancel();
+                        }
+                    
+                        var pastedNewLine = changeObj.origin == 'paste' && typeof changeObj.text == "object" && changeObj.text.length > 1;
+                        if (pastedNewLine) {
+                            var newText = changeObj.text.join(" ");
+                    
+                            return changeObj.update(null, null, [newText]);
+                        }
+                    
+                        return null;
+                    });
+                } else {
+                    target.parentElement.children[1].placeholder = "Query";
+                    target.parentElement.children[2].placeholder = "Depth";
+                    target.parentElement.children[1].title = "Filter query";
+                    target.parentElement.children[2].title = "Depth of the desired filtered nodes (count starts at 0)";
+                    target.parentElement.children[2].type = "number";
+                    // target.parentElement.children[1].value = "";
+                    target.parentElement.children[2].value = "" + defaultDepth;
+                    jsonThis.#codeMirror && jsonThis.#codeMirror.toTextArea();
+                    jsonThis.#codeMirror = null;
+                }
             }
-        }));
 
-        var jsonThis = this;
-        function advancedChange(target) {
-            target = $(target)[0];
-            jsonThis.#advancedSearch = target.checked;
-            if (target.checked) {
-                target.parentElement.children[1].placeholder = "Path (e.g. `path.*.to.node.*`)";
-                target.parentElement.children[2].placeholder = 'Rule (e.g. `this.someChild.has("value")`, where `this` is the last node in the path)';
-                target.parentElement.children[1].title = "Filter path";
-                target.parentElement.children[2].title = "Filter rule (JS-like)";
-                target.parentElement.children[2].type = "text";
-                // target.parentElement.children[1].value = "";
-                target.parentElement.children[2].value = "";
-            } else {
-                target.parentElement.children[1].placeholder = "Query";
-                target.parentElement.children[2].placeholder = "Depth";
-                target.parentElement.children[1].title = "Filter query";
-                target.parentElement.children[2].title = "Depth of the desired filtered nodes (count starts at 0)";
-                target.parentElement.children[2].type = "number";
-                // target.parentElement.children[1].value = "";
-                target.parentElement.children[2].value = "" + defaultDepth;
+            search.append($(`<input type='checkbox' name='advanced' title='Filter by specific paths and rules' ${this.#advancedSearch ? 'checked' : ''}></input>`).change((e) => {
+                advancedChange(e.target);
+            }));
+            search.append($("<label for='advanced'>Advanced filter</label>"));
+
+            search.append($("<br>"));
+            
+            search.append($("<button class='json-viewer-filter-button' title='Ctrl+F'>&#128269;</button>").click((e) => {
+                if (e.target.parentElement.classList.contains("hidden")) {
+                    this.toggleSearch("show");
+                } else {
+                    this.query(this.#queryPath, this.#queryRule);
+                }
+            }));
+            // question mark button
+            search.append($("<button class='json-viewer-help-button' title='Help'>?</button>").click((e) => {
+                window.open("https://github.com/YuvAIR/HTML-JSON-Viewer/blob/main/FILTER.md", "_blank");
+            }));
+
+            this.#container.append(search);
+
+            advancedChange(search.find("input[type='checkbox']"));
+
+            if (this.#options.maxKeyWidth) {
+                this.#container.css("--jsonviewer-max-key-width", this.#options.maxKeyWidth);
             }
-        }
-
-        search.append($(`<input type='checkbox' name='advanced' title='Filter by specific paths and rules' ${this.#advancedSearch ? 'checked' : ''}></input>`).change((e) => {
-            advancedChange(e.target);
-        }));
-        search.append($("<label for='advanced'>Advanced filter</label>"));
-
-        search.append($("<br>"));
-        
-        search.append($("<button class='json-viewer-filter-button' title='Ctrl+F'>&#128269;</button>").click((e) => {
-            if (e.target.parentElement.classList.contains("hidden")) {
-                // e.target.parentElement.classList.remove("hidden");
-                // e.target.parentElement.children[1].focus();
-                this.toggleSearch("show");
-            } else {
-                this.query(search.find("input").eq(0).val(), search.find("input").eq(1).val());
+            if (this.#options.maxValueWidth) {
+                this.#container.css("--jsonviewer-max-value-width", this.#options.maxValueWidth);
             }
-        }));
-        // question mark button
-        search.append($("<button class='json-viewer-help-button' title='Help'>?</button>").click((e) => {
-            window.open("https://github.com/YuvAIR/HTML-JSON-Viewer/blob/main/FILTER.md", "_blank");
-        }));
+            
+            
+            var nodeClickCallback = this.#options.nodeClickCallback;
+            this.#container.on("click", ".nodeKey", function() {
+                if (!nodeClickCallback) {
+                    return;
+                }
+                var node = $(this).parent().parent();
+                var path = JSONViewer.getNodePath(node);
+                var name = name = path[path.length-1];
+                var value = jsonThis.data;
+                for (const key of path) {
+                    value = value[key];
+                }
+                nodeClickCallback(name, value, path, node);
+            });
+            
+            this.#container.on("click", ".arrow", function() {
+                jsonThis.expandCollapse(JSONViewer.getNodePath($(this).parent().parent().parent()));
+            });
 
-        this.#container.append(search);
-
-        advancedChange(search.find("input[type='checkbox']"));
-
-        if (options.maxKeyWidth) {
-            this.#container.css("--jsonviewer-max-key-width", options.maxKeyWidth);
-        }
-        if (options.maxValueWidth) {
-            this.#container.css("--jsonviewer-max-value-width", options.maxValueWidth);
-        }
-        
-        
-        var nodeClickCallback = options.nodeClickCallback;
-        this.#container.on("click", ".nodeKey", function() {
-            if (!nodeClickCallback) {
-                return;
-            }
-            var node = $(this).parent().parent();
-            var path = JSONViewer.getNodePath(node);
-            var name = name = path[path.length-1];
-            var value = jsonThis.data;
-            for (const key of path) {
-                value = value[key];
-            }
-            nodeClickCallback(name, value, path, node);
+            var treeContainer = $("<div class='json-viewer-tree-container'></div>");
+            this.#container.append(treeContainer);
+            this.#createTree(data, treeContainer);
+            treeContainer.parent().focus();
         });
-        
-        this.#container.on("click", ".arrow", function() {
-            jsonThis.expandCollapse(JSONViewer.getNodePath($(this).parent().parent().parent()));
-        });
-
-        var treeContainer = $("<div class='json-viewer-tree-container'></div>");
-        this.#container.append(treeContainer);
-        this.#createTree(data, treeContainer);
-        treeContainer.parent().focus();
     }
 
     toggleSearch(action="toggle") {
