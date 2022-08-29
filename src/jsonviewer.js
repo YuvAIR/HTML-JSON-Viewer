@@ -1,6 +1,6 @@
 // Requires jQuery and Water CSS is recommended, will look terrible otherwise
 
-window.onload = function() {
+window.addEventListener("load", () => {
     var r = $(':root');
     var waterCSSTheme = r.css('--background-body');
     if (waterCSSTheme && waterCSSTheme.trim() === "#fff") { // light theme
@@ -20,12 +20,12 @@ window.onload = function() {
         r.css('--jsonviewer-arrow-hover', '0.825');
         r.css('--jsonviewer-highlight-color', '#896700');
     }
-};
+});
 
 // fix contenteditable focus on any click
 var fakeBlur = false;
 if (/AppleWebKit\/([\d.]+)/.exec(navigator.userAgent)) {
-    document.addEventListener('DOMContentLoaded', function(){
+    document.addEventListener('DOMContentLoaded', function() {
         var fixEl = document.createElement('input');
         fixEl.style.cssText = 'width:1px;height:1px;border:none;margin:0;padding:0; position:fixed; top:0; left:0';
         fixEl.tabIndex = -1;
