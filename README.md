@@ -56,7 +56,7 @@
  * @property {string} maxKeyWidth - max width of a key node (css string), overflow will be hidden. default: "100%"
  * @property {string} maxValueWidth - max width of a value node (css string), overflow will craete a new line. default: "100%"
  * @property {allowEdit} allowEdit - all terminal nodes (string values) which this callback outputs true for will be editable. default: `() => false`
- * @property {editOnChange} editOnChange - callback function to be called when a node (value) is edited. default: `(name, prevVal, newVal, path) => prevVal`
+ * @property {editOnChange} editOnChange - callback function to be called when a node (value) is edited. default: `(name, prevVal, newVal, path) => newVal`
  * @property {editOnBlur} editOnBlur - callback function to be called when a node (value) is edited and loses focus. default: `(name, newVal, path) => newVal`
  * @property {boolean} editBlurOnEnter - if true, the content editable value will lose focus when the user presses enter. default: true
  * @property {number} defaultDepth - default depth of the tree. default: 1
@@ -178,8 +178,8 @@ JSONViewer.collapseAll();
 ```
 
 ## CDNs:
- - `<script src="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.20/src/jsonviewer.min.js"></script>`
- - `<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.20/src/jsonviewer.min.css">`
+ - `<script src="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.21/src/jsonviewer.min.js"></script>`
+ - `<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/YuvAIR/HTML-JSON-Viewer@1.0.21/src/jsonviewer.min.css">`
 
 
 ## [Filtering](FILTER.md)

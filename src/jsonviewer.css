@@ -123,6 +123,7 @@ button {
 
 .json-viewer-container .nodeValue {
     max-width: var(--jsonviewer-max-value-width);
+    padding: 1px 3px 1px 3px;
     word-wrap: break-word;
     white-space: initial;
 }
@@ -199,6 +200,11 @@ button {
 
 .json-viewer-container .string::before, .json-viewer-container .string::after {
     content: "\"";
+    float: left;
+}
+
+.json-viewer-container .string::after {
+    float: right;
 }
 
 

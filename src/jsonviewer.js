@@ -18,7 +18,7 @@ window.onload = function() {
         r.css('--jsonviewer-background-color', '#202b38');
         r.css('--jsonviewer-arrow', '1');
         r.css('--jsonviewer-arrow-hover', '0.825');
-        r.css('--jsonviewer-highlight-color', '#ffd34f');
+        r.css('--jsonviewer-highlight-color', '#896700');
     }
 };
 
@@ -107,6 +107,7 @@ class JSONViewer {
     #shown;
     #container;
     #data;
+    #tmpData;
     #currentData;
     #options;
     #advancedSearch = false;
@@ -205,7 +206,7 @@ class JSONViewer {
      * @property {string} maxKeyWidth - max width of a key node (css string), overflow will be hidden. default: "100%"
      * @property {string} maxValueWidth - max width of a value node (css string), overflow will craete a new line. default: "100%"
      * @property {allowEdit} allowEdit - all terminal nodes (string values) which this callback outputs true for will be editable. default: `() => false`
-     * @property {editOnChange} editOnChange - callback function to be called when a node (value) is edited. default: `(name, prevVal, newVal, path) => prevVal`
+     * @property {editOnChange} editOnChange - callback function to be called when a node (value) is edited. default: `(name, prevVal, newVal, path) => newVal`
      * @property {editOnBlur} editOnBlur - callback function to be called when a node (value) is edited and loses focus. default: `(name, newVal, path) => newVal`
      * @property {boolean} editBlurOnEnter - if true, the content editable value will lose focus when the user presses enter. default: true
      * @property {number} defaultDepth - default depth of the tree. default: 1
@@ -224,6 +225,7 @@ class JSONViewer {
         this.#shown = [];
         this.#container = $(container);
         this.#data = data;
+        this.#tmpData = structuredClone(data);
         this.#currentData = data;
         this.#options = options ? options : {};
 
@@ -234,7 +236,7 @@ class JSONViewer {
         this.#keyMapCallback = this.#options.keyMapCallback ? this.#options.keyMapCallback : (key) => { return key; };
         this.#valueMapCallback = this.#options.valueMapCallback ? this.#options.valueMapCallback : JSONViewer.linkify;
         this.#allowEdit = this.#options.allowEdit ? this.#options.allowEdit : () => { return false; };
-        this.#editOnChange = this.#options.editOnChange ? this.#options.editOnChange : (name, prevVal, newVal, path) => { return prevVal; };
+        this.#editOnChange = this.#options.editOnChange ? this.#options.editOnChange : (name, prevVal, newVal, path) => { return newVal; };
         this.#editOnBlur = this.#options.editOnBlur ? this.#options.editOnBlur : (name, newVal, path) => { return newVal; };
         this.#editBlurOnEnter = this.#options.editBlurOnEnter ? this.#options.editBlurOnEnter : true;
         this.#expandAll = this.#options.expandAll ? this.#options.expandAll : false;
@@ -605,6 +607,7 @@ class JSONViewer {
         this.#shown = [];
         data = typeof data === "string" ? JSON.parse(data) : data;
         this.#currentData = data;
+        this.#tmpData = structuredClone(data);
         if (!keepOldData) {
             this.#data = data;
         }
@@ -735,30 +738,59 @@ class JSONViewer {
                         nodeValue.innerHTML = newval;
                     });
 
+                    function parseString(string) {
+                        if (typeof string !== "string") {
+                            return string;
+                        }
+
+                        if (parseFloat(string).toString() === string) {
+                            return parseFloat(string);
+                        } else if (string === "true" || string === "false") {
+                            return string === "true";
+                        } else if (string === "null") {
+                            return null;
+                        } else if (string === "undefined") {
+                            return undefined;
+                        }
+                        return string;
+                    }
+
                     const jsonThis = this;
                     function editable() {
                         nodeValue.contentEditable = true;
                         nodeValue.classList.add("editable");
 
                         nodeValue.onkeydown = function(e) {
-                            if (e.key === "Enter") {
+                            if (e.key === "Enter" && jsonThis.#editBlurOnEnter) {
+                                nodeValue.blur();
+                            } else if (e.key === "Escape") {
+                                nodeValue.innerHTML = data[key];
                                 nodeValue.blur();
                             }
                         };
 
-                        nodeValue.oninput = () => {
+                        nodeValue.addEventListener("input", () => {
                             const newPath = path.concat([key]);
-                            const currentValue = nodeValue.innerHTML;
-                            const previousValue = JSONViewer.#getDeepValue(jsonThis.#data, newPath);
-                            JSONViewer.#maybeAsyncCallback([key, previousValue, currentValue, newPath], jsonThis.#editOnChange, (newVal) => {
+
+                            const oldValue = JSONViewer.#getDeepValue(jsonThis.#tmpData, newPath);
+                            const currentValue = parseString(nodeValue.innerHTML);
+
+                            const oldType = typeof oldValue;
+                            const currentType = typeof currentValue;
+
+                            if (oldType !== currentType) {
+                                nodeValue.classList.toggle(oldType, false);
+                                nodeValue.classList.toggle(currentType, true);
+                            }
+
+                            JSONViewer.#maybeAsyncCallback([key, oldValue, currentValue, newPath], jsonThis.#editOnChange, (newVal) => {
                                 if (newVal != currentValue) {
                                     nodeValue.innerHTML = newVal;
                                     nodeValue.focus();
                                 }
-                                JSONViewer.#setDeepValue(jsonThis.#data, newPath, newVal);
-                                JSONViewer.#setDeepValue(jsonThis.#currentData, newPath, newVal);
+                                JSONViewer.#setDeepValue(jsonThis.#tmpData, newPath, newVal);
                             });
-                        };
+                        });
 
                         nodeValue.onblur = () => {
                             if (!fakeBlur) {
@@ -769,6 +801,7 @@ class JSONViewer {
                                     nodeValue.blur();
                                     JSONViewer.#setDeepValue(jsonThis.#data, newPath, newval);
                                     JSONViewer.#setDeepValue(jsonThis.#currentData, newPath, newval);
+                                    JSONViewer.#setDeepValue(jsonThis.#tmpData, newPath, newval);
                                 });
                             }
                         };
