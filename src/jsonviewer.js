@@ -1,6 +1,7 @@
 // Requires jQuery and Water CSS is recommended, will look terrible otherwise
 
-window.onload = function() {
+
+function onload() {
     var r = $(':root');
     var waterCSSTheme = r.css('--background-body');
     if (waterCSSTheme && waterCSSTheme.trim() === "#fff") { // light theme
@@ -20,7 +21,16 @@ window.onload = function() {
         r.css('--jsonviewer-arrow-hover', '0.825');
         r.css('--jsonviewer-highlight-color', '#896700');
     }
-};
+}
+
+window.addEventListener('load', function() {
+    try {
+        Turbo;
+        document.addEventListener('turbo:render', onload);
+    } catch (e) {
+        onload();
+    }
+});
 
 // fix contenteditable focus on any click
 var fakeBlur = false;
