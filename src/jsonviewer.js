@@ -376,7 +376,7 @@ class JSONViewer {
         if (node.length == 0) {
             return;
         }
-        node.find(".arrow").first().attr("src", node.attr("src") == JSONViewer.#play_circle ? JSONViewer.#arrow_right : JSONViewer.#play_circle);
+        node.find(".arrow").first().attr("src", node.find(".arrow").first().attr("src") == JSONViewer.#play_circle ? JSONViewer.#arrow_right : JSONViewer.#play_circle);
         node.toggleClass("hidden");
         if (!node.hasClass("hidden")) {
             this.#shown.push(path.join("/"));
@@ -604,7 +604,6 @@ class JSONViewer {
     async updateTree(data, keepOldData=false) {
         this.#verticalLines = [];
         this.#topVerticalLines = [];
-        this.#shown = [];
         data = typeof data === "string" ? JSON.parse(data) : data;
         this.#currentData = data;
         this.#tmpData = structuredClone(data);
