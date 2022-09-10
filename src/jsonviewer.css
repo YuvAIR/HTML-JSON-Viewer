@@ -87,16 +87,15 @@ button {
 }
 
 .json-viewer-container .nodeKey {
+    display: flex;
+    align-items: center;
     border-radius: 5px;
     padding: 4px;
     padding-left: 7px;
     padding-right: 7px;
     margin: 0px;
     margin-right: 5px;
-    min-width: max-content;
     max-width: var(--jsonviewer-max-key-width);
-    overflow: hidden;
-    white-space: nowrap;
 }
 .json-viewer-container .nodeKey:hover {
     text-decoration: underline;
@@ -119,7 +118,8 @@ button {
     content: ":";
     text-decoration: none;
     color: var(--jsonviewer-main-color);
-    display: inline-block
+    display: inline-block;
+    margin-left: 2px;
 }
 
 .json-viewer-container .arrow {
@@ -145,6 +145,7 @@ button {
 .json-viewer-container .arrowDiv {
     display: flex;
     align-items: center;
+    min-width: 25px;
 }
 .json-viewer-container .arrowDiv::after {
     content: "";
@@ -187,11 +188,6 @@ button {
 
 .json-viewer-container .string::before, .json-viewer-container .string::after {
     content: "\"";
-    float: left;
-}
-
-.json-viewer-container .string::after {
-    float: right;
 }
 
 
