@@ -241,6 +241,7 @@ class JSONViewer {
     #tmpData;
     #currentData;
     #options;
+    #defaultDepth;
     #advancedSearch = false;
     #keyMapCallback;
     #valueMapCallback;
@@ -364,16 +365,7 @@ class JSONViewer {
 
         JSONViewer.#instances[$(container)[0].id] = this;
 
-        var defaultDepth = this.#options.defaultDepth ? this.#options.defaultDepth : 1;
-        this.#advancedSearch = this.#options.defaultAdvanced ? this.#options.defaultAdvanced : false;
-        this.#keyMapCallback = this.#options.keyMapCallback ? this.#options.keyMapCallback : (key) => { return key; };
-        this.#valueMapCallback = this.#options.valueMapCallback ? this.#options.valueMapCallback : JSONViewer.linkify;
-        this.#allowEdit = this.#options.allowEdit ? this.#options.allowEdit : () => { return false; };
-        this.#editOnChange = this.#options.editOnChange ? this.#options.editOnChange : (name, prevVal, newVal, path) => { return newVal; };
-        this.#editOnBlur = this.#options.editOnBlur ? this.#options.editOnBlur : (name, newVal, path) => { return newVal; };
-        this.#editBlurOnEnter = this.#options.editBlurOnEnter ? this.#options.editBlurOnEnter : true;
-        this.#expandAll = this.#options.expandAll ? this.#options.expandAll : false;
-        this.#showLines = this.#options.showLines ? this.#options.showLines : false;
+        this.updateOptions(options, false);
 
         this.#container.addClass("json-viewer-container");
         this.#container.attr("tabindex", "0");
@@ -389,7 +381,7 @@ class JSONViewer {
         var search = $("<div class='json-viewer-search hidden' tabindex='0'></div>");
         search.append($("<button class='json-viewer-close-search'>&times;</button>").click(this.toggleSearch.bind(this, "hide")));
         search.append($("<input type='text' placeholder='Query' title='Filter query.'></input>"));
-        search.append($(`<input type='number' placeholder='Depth' title='Depth of the desired filtered nodes (count starts at 0)' value='${defaultDepth}'></input>`).change((e) => {
+        search.append($(`<input type='number' placeholder='Depth' title='Depth of the desired filtered nodes (count starts at 0)' value='${this.#defaultDepth}'></input>`).change((e) => {
             if (e.target.type == "number") {
                 e.target.value = (e.target.valueAsNumber || 0);
             }
@@ -414,7 +406,7 @@ class JSONViewer {
                 target.parentElement.children[2].title = "Depth of the desired filtered nodes (count starts at 0)";
                 target.parentElement.children[2].type = "number";
                 // target.parentElement.children[1].value = "";
-                target.parentElement.children[2].value = "" + defaultDepth;
+                target.parentElement.children[2].value = "" + jsonThis.#defaultDepth;
             }
         }
 
@@ -472,6 +464,23 @@ class JSONViewer {
         this.#container.append(treeContainer);
         this.#createTree(data, treeContainer);
         treeContainer.parent().focus();
+    }
+
+    updateOptions(options, updateTree=true) {
+        this.#options = {...this.#options, ...options};
+
+        this.#defaultDepth = this.#options.defaultDepth ? this.#options.defaultDepth : 1;
+        this.#advancedSearch = this.#options.defaultAdvanced ? this.#options.defaultAdvanced : false;
+        this.#keyMapCallback = this.#options.keyMapCallback ? this.#options.keyMapCallback : (key) => { return key; };
+        this.#valueMapCallback = this.#options.valueMapCallback ? this.#options.valueMapCallback : JSONViewer.linkify;
+        this.#allowEdit = this.#options.allowEdit ? this.#options.allowEdit : () => { return false; };
+        this.#editOnChange = this.#options.editOnChange ? this.#options.editOnChange : (name, prevVal, newVal, path) => { return newVal; };
+        this.#editOnBlur = this.#options.editOnBlur ? this.#options.editOnBlur : (name, newVal, path) => { return newVal; };
+        this.#editBlurOnEnter = this.#options.editBlurOnEnter ? this.#options.editBlurOnEnter : true;
+        this.#expandAll = this.#options.expandAll ? this.#options.expandAll : false;
+        this.#showLines = this.#options.showLines ? this.#options.showLines : false;
+
+        updateTree && this.updateTree(this.#currentData, true);
     }
 
     toggleSearch(action="toggle") {
