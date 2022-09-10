@@ -1,3 +1,133 @@
+const InstantSearch = {
+    "highlight": function (container, highlightText) {
+        const internalHighlighter = function (options) {
+            const highlighted = [];
+            const id = {
+                container: "container",
+                tokens: "tokens",
+                all: "all",
+                token: "token",
+                className: "className",
+                sensitiveSearch: "sensitiveSearch"
+            },
+                tokens = options[id.tokens],
+                allClassName = options[id.all][id.className],
+                allSensitiveSearch = options[id.all][id.sensitiveSearch];
+
+            function getTagPath(node) {
+                var path = [];
+                while (node.parentElement) {
+                    path.unshift(node.nodeName);
+                    node = node.parentElement;
+                }
+                return path;
+            }
+
+            function checkAndReplace(node, tokenArr, classNameAll, sensitiveSearchAll) {
+                if (getTagPath(node).some((tag) => ["SCRIPT", "STYLE"].includes(tag))) return;
+                var nodeVal = node.nodeValue, parentNode = node.parentNode,
+                    i, j, curToken, myToken, myClassName, mySensitiveSearch,
+                    finalClassName, finalSensitiveSearch,
+                    foundIndex, begin, matched, end,
+                    textNode, span, isFirst;
+
+                for (i = 0, j = tokenArr.length; i < j; i++) {
+                    curToken = tokenArr[i];
+                    myToken = curToken[id.token];
+                    myClassName = curToken[id.className];
+                    mySensitiveSearch = curToken[id.sensitiveSearch];
+
+                    finalClassName = (classNameAll ? myClassName + " " + classNameAll : myClassName);
+
+                    finalSensitiveSearch = (typeof sensitiveSearchAll !== "undefined" ? sensitiveSearchAll : mySensitiveSearch);
+
+                    isFirst = true;
+                    while (true) {
+                        if (finalSensitiveSearch)
+                            foundIndex = nodeVal.indexOf(myToken);
+                        else
+                            foundIndex = nodeVal.toLowerCase().indexOf(myToken.toLowerCase());
+
+                        if (foundIndex < 0) {
+                            if (isFirst)
+                                break;
+
+                            if (nodeVal) {
+                                textNode = document.createTextNode(nodeVal);
+                                parentNode.insertBefore(textNode, node);
+                            } // End if (nodeVal)
+
+                            parentNode.removeChild(node);
+                            break;
+                        } // End if (foundIndex < 0)
+
+                        isFirst = false;
+
+
+                        begin = nodeVal.substring(0, foundIndex);
+                        matched = nodeVal.substr(foundIndex, myToken.length);
+
+                        if (begin) {
+                            textNode = document.createTextNode(begin);
+                            parentNode.insertBefore(textNode, node);
+                        } // End if (begin)
+
+                        span = document.createElement("span");
+                        span.className += finalClassName;
+                        span.appendChild(document.createTextNode(matched));
+                        parentNode.insertBefore(span, node);
+
+                        highlighted.push(parentNode);
+
+                        nodeVal = nodeVal.substring(foundIndex + myToken.length);
+                    } // Whend
+                } // Next i 
+            }; // End Function checkAndReplace 
+
+            function iterator(p) {
+                if (p === null) return;
+
+                var children = Array.prototype.slice.call(p.childNodes), i, cur;
+
+                if (children.length) {
+                    for (i = 0; i < children.length; i++) {
+                        cur = children[i];
+                        if (cur.nodeType === 3) {
+                            checkAndReplace(cur, tokens, allClassName, allSensitiveSearch);
+                        } else if (cur.nodeType === 1) {
+                            iterator(cur);
+                        }
+                    }
+                }
+            }; // End Function iterator
+
+            iterator(options[id.container]);
+            return highlighted;
+        }; // End Function highlighter
+
+        if (!Array.isArray(highlightText)) {
+            highlightText = [highlightText];
+        }
+
+        return internalHighlighter(
+            {
+                container: container,
+                all:
+                {
+                    className: "highlighter"
+                },
+                tokens: highlightText.map((text) => {
+                    return {
+                        token: text,
+                        className: "highlight",
+                        sensitiveSearch: true
+                    };
+                }),
+            }
+        ); // End Call internalHighlighter 
+    } // End Function highlight
+};
+
 // Requires jQuery and Water CSS is recommended, will look terrible otherwise
 
 window.addEventListener("load", () => {
@@ -25,20 +155,21 @@ window.addEventListener("load", () => {
 // fix contenteditable focus on any click
 var fakeBlur = false;
 if (/AppleWebKit\/([\d.]+)/.exec(navigator.userAgent)) {
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         var fixEl = document.createElement('input');
         fixEl.style.cssText = 'width:1px;height:1px;border:none;margin:0;padding:0; position:fixed; top:0; left:0';
         fixEl.tabIndex = -1;
 
         var shouldNotFocus = null;
 
-        function checkMouseEvent(e){
+        function checkMouseEvent(e) {
             if (e.target.isContentEditable) return;
             var range = document.caretRangeFromPoint(e.clientX, e.clientY);
+            if (!range) return;
             var wouldFocus = getContentEditableRoot(range.commonAncestorContainer);
             if (!wouldFocus || wouldFocus.contains(e.target)) return;
             shouldNotFocus = wouldFocus;
-            setTimeout(function(){
+            setTimeout(function () {
                 shouldNotFocus = null;
             });
             if (e.type === 'mousedown') {
@@ -46,20 +177,20 @@ if (/AppleWebKit\/([\d.]+)/.exec(navigator.userAgent)) {
             }
         }
         document.addEventListener('mousedown', checkMouseEvent, false);
-        document.addEventListener('mouseup', function(){
-                document.removeEventListener('mousemove', checkMouseEvent, false);
+        document.addEventListener('mouseup', function () {
+            document.removeEventListener('mousemove', checkMouseEvent, false);
         }, false);
 
-        document.addEventListener('focus', function(e){
+        document.addEventListener('focus', function (e) {
             if (e.target !== shouldNotFocus) return;
             if (!e.target.isContentEditable) return;
             fakeBlur = true;
-            setTimeout(function(){
+            setTimeout(function () {
                 fakeBlur = false;
             }, 100);
             document.body.appendChild(fixEl);
             fixEl.focus();
-            fixEl.setSelectionRange(0,0);
+            fixEl.setSelectionRange(0, 0);
             document.body.removeChild(fixEl);
         }, true);
 
@@ -81,7 +212,7 @@ function getContentEditableRoot(el) {
 $(document).on("keydown", ".json-viewer-container", function (e) {
     if (e.ctrlKey && e.key === "f") {
         e.preventDefault();
-        
+
         JSONViewer.getInstanceByContainer(this).toggleSearch();
     }
 })
@@ -95,7 +226,6 @@ $(document).on("keydown", ".json-viewer-container .json-viewer-search input", fu
 
 $(document).on("keydown", ".json-viewer-container .json-viewer-search", function (e) {
     if (!e.ctrlKey && !e.shiftKey && e.key === "Escape") {
-        // e.target.parentElement.getElementsByClassName("json-viewer-close-search")[0].click();
         JSONViewer.getInstanceByContainer(this.parentElement).toggleSearch("hide");
     }
 });
@@ -105,6 +235,7 @@ class JSONViewer {
     #verticalLines;
     #topVerticalLines;
     #shown;
+    #preQueryShown;
     #container;
     #data;
     #tmpData;
@@ -115,6 +246,7 @@ class JSONViewer {
     #valueMapCallback;
     #expandAll;
     #allowEdit;
+    #showLines;
     #editOnChange;
     #editOnBlur;
     #editBlurOnEnter;
@@ -212,6 +344,7 @@ class JSONViewer {
      * @property {number} defaultDepth - default depth of the tree. default: 1
      * @property {boolean} defaultAdvanced - default state of the advanced search. default: false
      * @property {boolean} expandAll - expand all nodes on every tree update call (including the initial one). default: false
+     * @property {boolean} showLines - show lines between nodes. some features (such as auto expand on filter) will not work as the lines are bad for performance. default: false
      */
     /**
      * @param {object|string} data - Object / JSON string to be displayed
@@ -240,9 +373,18 @@ class JSONViewer {
         this.#editOnBlur = this.#options.editOnBlur ? this.#options.editOnBlur : (name, newVal, path) => { return newVal; };
         this.#editBlurOnEnter = this.#options.editBlurOnEnter ? this.#options.editBlurOnEnter : true;
         this.#expandAll = this.#options.expandAll ? this.#options.expandAll : false;
+        this.#showLines = this.#options.showLines ? this.#options.showLines : false;
 
         this.#container.addClass("json-viewer-container");
         this.#container.attr("tabindex", "0");
+        (this.#container.attr("id") === undefined) && this.#container.attr("id", "json-viewer-" + JSONViewer.#instances.length);
+        !this.#showLines && this.#container.append(`
+        <style scoped>
+            .arrowDiv::after, .arrowDiv::before {
+                display: none;
+            }
+        </style>
+        `);
 
         var search = $("<div class='json-viewer-search hidden' tabindex='0'></div>");
         search.append($("<button class='json-viewer-close-search'>&times;</button>").click(this.toggleSearch.bind(this, "hide")));
@@ -282,11 +424,9 @@ class JSONViewer {
         search.append($("<label for='advanced'>Advanced filter</label>"));
 
         search.append($("<br>"));
-        
+
         search.append($("<button class='json-viewer-filter-button' title='Ctrl+F'>&#128269;</button>").click((e) => {
             if (e.target.parentElement.classList.contains("hidden")) {
-                // e.target.parentElement.classList.remove("hidden");
-                // e.target.parentElement.children[1].focus();
                 this.toggleSearch("show");
             } else {
                 this.query(search.find("input").eq(0).val(), search.find("input").eq(1).val());
@@ -307,24 +447,24 @@ class JSONViewer {
         if (this.#options.maxValueWidth) {
             this.#container.css("--jsonviewer-max-value-width", this.#options.maxValueWidth);
         }
-        
-        
+
+
         var nodeClickCallback = this.#options.nodeClickCallback;
-        this.#container.on("click", ".nodeKey", function() {
+        this.#container.on("click", ".nodeKey", function () {
             if (!nodeClickCallback) {
                 return;
             }
             var node = $(this).parent().parent();
             var path = JSONViewer.getNodePath(node);
-            var name = name = path[path.length-1];
+            var name = name = path[path.length - 1];
             var value = jsonThis.data;
             for (const key of path) {
                 value = value[key];
             }
             nodeClickCallback(name, value, path, node);
         });
-        
-        this.#container.on("click", ".arrow", function() {
+
+        this.#container.on("click", ".arrow", function () {
             jsonThis.expandCollapse(JSONViewer.getNodePath($(this).parent().parent().parent()));
         });
 
@@ -349,10 +489,12 @@ class JSONViewer {
         }
 
         if (search.classList.contains("hidden")) {
+            this.#shown = structuredClone(this.#preQueryShown);
             search.getElementsByClassName("json-viewer-filter-button")[0].title = "Ctrl+F";
             this.updateTree(this.#data, true);
             this.#container.focus();
         } else {
+            this.#preQueryShown = structuredClone(this.#shown);
             search.getElementsByClassName("json-viewer-filter-button")[0].title = "Enter";
             search.getElementsByTagName("input")[0].focus();
         }
@@ -371,7 +513,7 @@ class JSONViewer {
      * Expands or collapses the node at the given path (expands if collapsed, collapses if expanded)
      * @param {string[]} path
      */
-     expandCollapse(path) {
+    expandCollapse(path) {
         var node = this.#container.find(".node[data-path='" + path.join("/") + "']");
         if (node.length == 0) {
             return;
@@ -383,7 +525,7 @@ class JSONViewer {
         } else {
             this.#shown.splice(this.#shown.indexOf(JSONViewer.getNodePath(node).join("/")), 1);
         }
-        this.#updateLines();
+        this.#showLines && this.#updateLines();
     }
     /**
      * Expand the node at the given path.
@@ -394,6 +536,17 @@ class JSONViewer {
             return;
         }
         this.expandCollapse(path);
+    }
+    /**
+     * Expand the node at the given path, and all its parents.
+     * @param {string[]} path
+     */
+    expandUpTo(path) {
+        var currentPath = [];
+        for (const key of path) {
+            currentPath.push(key);
+            this.expand(currentPath);
+        }
     }
     /**
      * Collapse the node at the given path.
@@ -410,7 +563,7 @@ class JSONViewer {
      */
     expandAll() {
         var jsonThis = this;
-        this.#container.find(".node").each(function() {
+        this.#container.find(".node").each(function () {
             jsonThis.expand(JSONViewer.getNodePath($(this)));
         });
     }
@@ -419,7 +572,7 @@ class JSONViewer {
      */
     collapseAll() {
         var jsonThis = this;
-        this.#container.find(".node").each(function() {
+        this.#container.find(".node").each(function () {
             jsonThis.collapse(JSONViewer.getNodePath($(this)));
         });
     }
@@ -432,14 +585,14 @@ class JSONViewer {
      * @param {number|string} depth
      * @param {boolean} advanced - If true, q is the path and depth is the rule.
      */
-    query(q="", depth=0, advanced=null) {
+    async query(q = "", depth = 0, advanced = null) {
         q = q.toString();
         advanced = advanced === null ? this.#advancedSearch : advanced;
         !advanced && (depth = parseInt(depth));
-        
+
 
         var new_data;
-        var regex;
+        var highlight;
         if (advanced === true) {
             if (Object.keys(this.#data).length == 1) {
                 var key = Object.keys(this.#data)[0];
@@ -448,22 +601,24 @@ class JSONViewer {
             new_data = JSONViewer.#advancedQueryRec(q.split("."), depth.trim(), this.#data);
             var strings = new_data.strings;
             new_data = new_data.data;
-            regex = strings.length > 0 ? new RegExp(`(${strings.join("|")})`, "gi") : null;
+            highlight = strings;
         } else {
             new_data = JSONViewer.#queryRec(q, depth, this.#data);
-            regex = new RegExp(`(${q})`, 'ig');
+            highlight = q;
         }
-        this.updateTree(new_data, true);
+        await this.updateTree(new_data, true);
 
-        var nodes = this.#container.find(".json-viewer-tree-container .nodeKey, .json-viewer-tree-container .nodeValue");
-        if (regex) {
-            for (const node of nodes) {
-                var og_text = node.innerHTML;
-                var text = og_text.replace(regex, '<span class="highlight">$1</span>');
-                node.innerHTML = text;
+        if (highlight) {
+            const res = InstantSearch.highlight(this.container.querySelector(".json-viewer-tree-container"), highlight);
+            for (const elem of res) {
+                const node = elem.closest(".node");
+                if (node) {
+                    this.expandUpTo(JSONViewer.getNodePath(node));
+                }
             }
         }
     }
+
     static #queryRec(q, depth, data) {
         var new_data = {};
         for (const key in data) {
@@ -473,7 +628,7 @@ class JSONViewer {
                 if (depth == 0) {
                     new_data[key] = data[key];
                 } else { // depth > 0
-                    new_data[key] = JSONViewer.#queryRec(q, depth-1, data[key]);
+                    new_data[key] = JSONViewer.#queryRec(q, depth - 1, data[key]);
                 }
             }
         }
@@ -482,7 +637,7 @@ class JSONViewer {
 
     static #advancedQueryRec(path, query, data) {
         var expression = esprima.parse(query).body[0].expression;
-        function evaluate(path, expr, target, isFunc=false, isFirstInMember=true) {
+        function evaluate(path, expr, target, isFunc = false, isFirstInMember = true) {
             switch (expr.type) {
                 case "CallExpression":
                     var func = evaluate(path, expr.callee, target, true);
@@ -512,13 +667,13 @@ class JSONViewer {
                                 object = Object.values(object);
                                 property = "includes";
                                 break;
-                            
+
                             case "keys":
                                 return () => Object.keys(object);
-                            
+
                             case "values":
                                 return () => Object.values(object);
-                            
+
                             case "len":
                             case "length":
                                 return () => Object.keys(object).length;
@@ -544,21 +699,21 @@ class JSONViewer {
                     return target;
             }
         }
-        
+
         var new_data = {};
-        function rec(data, path, depth=0, pathToHere=[]) {
+        function rec(data, path, depth = 0, pathToHere = []) {
             if (path.length > depth && path[depth] == "*") {
                 for (const key in data) {
-                    rec(data[key], path, depth+1, pathToHere.concat([key]));
+                    rec(data[key], path, depth + 1, pathToHere.concat([key]));
                 }
             } else if (path.length > depth && path[depth] in data) {
-                rec(data[path[depth]], path, depth+1, pathToHere.concat([path[depth]]));
+                rec(data[path[depth]], path, depth + 1, pathToHere.concat([path[depth]]));
             } else if (path.length == depth) {
                 var res;
                 try {
                     res = evaluate(pathToHere, expression, data);
-                } catch (e) {}
-                
+                } catch (e) { }
+
                 if (res) {
                     var pointer = new_data;
                     for (var i = 0; i < pathToHere.length - 1; i++) {
@@ -601,7 +756,7 @@ class JSONViewer {
      * @param {object|string} data
      * @param {boolean} keepOldData - if true, only the tree would be updated, but the old data is kept. (shouldn't really be used by the user)
      */
-    async updateTree(data, keepOldData=false) {
+    async updateTree(data, keepOldData = false) {
         this.#verticalLines = [];
         this.#topVerticalLines = [];
         data = typeof data === "string" ? JSON.parse(data) : data;
@@ -665,12 +820,12 @@ class JSONViewer {
         }
         pointer[path[path.length - 1]] = value;
     }
-    
+
     /**
      * @param {object} data
      * @param {HTMLElement} container
      */
-    async #createTree(data, current_node, first=true, path=[]) {
+    async #createTree(data, current_node, first = true, path = []) {
         current_node = $(current_node)[0];
 
         var nodes = []
@@ -682,36 +837,36 @@ class JSONViewer {
             node.dataset.path = path.concat(key).join("/");
             node.dataset.key = JSON.stringify(key);
 
-                let nodeBody = document.createElement("div");
-                nodeBody.classList.add("nodeBody");
-                firstCond && nodeBody.classList.add("root");
-                let arrowDiv = document.createElement("div");
-                arrowDiv.classList.add("arrowDiv");
+            let nodeBody = document.createElement("div");
+            nodeBody.classList.add("nodeBody");
+            firstCond && nodeBody.classList.add("root");
+            let arrowDiv = document.createElement("div");
+            arrowDiv.classList.add("arrowDiv");
 
-                if (!firstCond) {
-                    var arrow = document.createElement("img");
-                    arrow.classList.add("arrow");
-                    arrow.src = JSONViewer.#play_circle;
-                
-                    arrowDiv.appendChild(arrow);
-                
-                    nodeBody.appendChild(arrowDiv);
-                }
-                
-                    let nodeKey = document.createElement("span");
-                    nodeKey.classList.add("nodeKey");
-                    nodeKey.innerHTML = key;
-                    JSONViewer.#maybeAsyncCallback([key, data[key], path.concat(key)], this.#keyMapCallback, (newkey) => {
-                        nodeKey.innerHTML = newkey;
-                    });
-                
-                nodeBody.appendChild(nodeKey);
+            if (!firstCond) {
+                var arrow = document.createElement("img");
+                arrow.classList.add("arrow");
+                arrow.src = JSONViewer.#play_circle;
+
+                arrowDiv.appendChild(arrow);
+
+                nodeBody.appendChild(arrowDiv);
+            }
+
+            let nodeKey = document.createElement("span");
+            nodeKey.classList.add("nodeKey");
+            nodeKey.innerHTML = key;
+            JSONViewer.#maybeAsyncCallback([key, data[key], path.concat(key)], this.#keyMapCallback, (newkey) => {
+                nodeKey.innerHTML = newkey;
+            });
+
+            nodeBody.appendChild(nodeKey);
 
             node.appendChild(nodeBody);
 
 
             current_node.appendChild(node);
-            
+
             let nodePath = JSONViewer.getNodePath(node).join("/");
             if (this.#expandAll) {
                 this.#shown.push(nodePath);
@@ -728,87 +883,87 @@ class JSONViewer {
                 arrow && arrow.remove();
                 arrowDiv.classList.add("lastArrowDiv")
                 nodeKey.classList.add("lastNodeKey");
-                
-                    let nodeValue = document.createElement("span");
-                    nodeValue.classList.add("nodeValue");
-                    nodeValue.classList.add(typeof data[key]);
-                    nodeValue.innerHTML = data[key];
-                    JSONViewer.#maybeAsyncCallback([data[key], path.concat([key])], this.#valueMapCallback, (newval) => {
-                        nodeValue.innerHTML = newval;
-                    });
 
-                    function parseString(string) {
-                        if (typeof string !== "string") {
-                            return string;
-                        }
+                let nodeValue = document.createElement("span");
+                nodeValue.classList.add("nodeValue");
+                nodeValue.classList.add(typeof data[key]);
+                nodeValue.innerHTML = data[key];
+                JSONViewer.#maybeAsyncCallback([data[key], path.concat([key])], this.#valueMapCallback, (newval) => {
+                    nodeValue.innerHTML = newval;
+                });
 
-                        if (parseFloat(string).toString() === string) {
-                            return parseFloat(string);
-                        } else if (string === "true" || string === "false") {
-                            return string === "true";
-                        } else if (string === "null") {
-                            return null;
-                        } else if (string === "undefined") {
-                            return undefined;
-                        }
+                function parseString(string) {
+                    if (typeof string !== "string") {
                         return string;
                     }
 
-                    const jsonThis = this;
-                    function editable() {
-                        nodeValue.contentEditable = true;
-                        nodeValue.classList.add("editable");
-
-                        nodeValue.onkeydown = function(e) {
-                            if (e.key === "Enter" && jsonThis.#editBlurOnEnter) {
-                                nodeValue.blur();
-                            } else if (e.key === "Escape") {
-                                nodeValue.innerHTML = data[key];
-                                nodeValue.blur();
-                            }
-                        };
-
-                        nodeValue.addEventListener("input", () => {
-                            const newPath = path.concat([key]);
-
-                            const oldValue = JSONViewer.#getDeepValue(jsonThis.#tmpData, newPath);
-                            const currentValue = parseString(nodeValue.innerHTML);
-
-                            const oldType = typeof oldValue;
-                            const currentType = typeof currentValue;
-
-                            if (oldType !== currentType) {
-                                nodeValue.classList.toggle(oldType, false);
-                                nodeValue.classList.toggle(currentType, true);
-                            }
-
-                            JSONViewer.#maybeAsyncCallback([key, oldValue, currentValue, newPath], jsonThis.#editOnChange, (newVal) => {
-                                if (newVal != currentValue) {
-                                    nodeValue.innerHTML = newVal;
-                                    nodeValue.focus();
-                                }
-                                JSONViewer.#setDeepValue(jsonThis.#tmpData, newPath, newVal);
-                            });
-                        });
-
-                        nodeValue.onblur = () => {
-                            if (!fakeBlur) {
-                                const newPath = path.concat([key]);
-                                const currentValue = nodeValue.innerHTML;
-                                JSONViewer.#maybeAsyncCallback([key, currentValue, newPath], jsonThis.#editOnBlur, (newval) => {
-                                    nodeValue.innerHTML = newval;
-                                    nodeValue.blur();
-                                    JSONViewer.#setDeepValue(jsonThis.#data, newPath, newval);
-                                    JSONViewer.#setDeepValue(jsonThis.#currentData, newPath, newval);
-                                    JSONViewer.#setDeepValue(jsonThis.#tmpData, newPath, newval);
-                                });
-                            }
-                        };
+                    if (parseFloat(string).toString() === string) {
+                        return parseFloat(string);
+                    } else if (string === "true" || string === "false") {
+                        return string === "true";
+                    } else if (string === "null") {
+                        return null;
+                    } else if (string === "undefined") {
+                        return undefined;
                     }
+                    return string;
+                }
 
-                    JSONViewer.#maybeAsyncCallback([key, data[key], path.concat([key])], this.#allowEdit, (allow) => {
-                        allow && editable();
+                const jsonThis = this;
+                function editable() {
+                    nodeValue.contentEditable = true;
+                    nodeValue.classList.add("editable");
+
+                    nodeValue.onkeydown = function (e) {
+                        if (e.key === "Enter" && jsonThis.#editBlurOnEnter) {
+                            nodeValue.blur();
+                        } else if (e.key === "Escape") {
+                            nodeValue.innerHTML = data[key];
+                            nodeValue.blur();
+                        }
+                    };
+
+                    nodeValue.addEventListener("input", () => {
+                        const newPath = path.concat([key]);
+
+                        const oldValue = JSONViewer.#getDeepValue(jsonThis.#tmpData, newPath);
+                        const currentValue = parseString(nodeValue.innerHTML);
+
+                        const oldType = typeof oldValue;
+                        const currentType = typeof currentValue;
+
+                        if (oldType !== currentType) {
+                            nodeValue.classList.toggle(oldType, false);
+                            nodeValue.classList.toggle(currentType, true);
+                        }
+
+                        JSONViewer.#maybeAsyncCallback([key, oldValue, currentValue, newPath], jsonThis.#editOnChange, (newVal) => {
+                            if (newVal != currentValue) {
+                                nodeValue.innerHTML = newVal;
+                                nodeValue.focus();
+                            }
+                            JSONViewer.#setDeepValue(jsonThis.#tmpData, newPath, newVal);
+                        });
                     });
+
+                    nodeValue.onblur = () => {
+                        if (!fakeBlur) {
+                            const newPath = path.concat([key]);
+                            const currentValue = nodeValue.innerHTML;
+                            JSONViewer.#maybeAsyncCallback([key, currentValue, newPath], jsonThis.#editOnBlur, (newval) => {
+                                nodeValue.innerHTML = newval;
+                                nodeValue.blur();
+                                JSONViewer.#setDeepValue(jsonThis.#data, newPath, newval);
+                                JSONViewer.#setDeepValue(jsonThis.#currentData, newPath, newval);
+                                JSONViewer.#setDeepValue(jsonThis.#tmpData, newPath, newval);
+                            });
+                        }
+                    };
+                }
+
+                JSONViewer.#maybeAsyncCallback([key, data[key], path.concat([key])], this.#allowEdit, (allow) => {
+                    allow && editable();
+                });
 
 
                 nodeBody.appendChild(nodeValue);
@@ -816,12 +971,14 @@ class JSONViewer {
             nodes.push(node);
         }
 
-        for (var i = 0; i < nodes.length; i++) {
-            if (i < nodes.length - 1) {
-                this.#verticalLine(current_node, nodes[i], nodes[i+1]);
-            }
-            if (i === 0 && !first) {
-                this.#topVerticalLine(current_node, nodes[i]);
+        if (this.#showLines) {
+            for (var i = 0; i < nodes.length; i++) {
+                if (i < nodes.length - 1) {
+                    this.#verticalLine(current_node, nodes[i], nodes[i + 1]);
+                }
+                if (i === 0 && !first) {
+                    this.#topVerticalLine(current_node, nodes[i]);
+                }
             }
         }
     }
@@ -840,12 +997,12 @@ class JSONViewer {
             return text;
         }
         var urlRegex = /(https?:\/\/[^\s]+)/g;
-        return text.replace(urlRegex, function(url) {
+        return text.replace(urlRegex, function (url) {
             return '<a href="' + url + '" target="_blank">' + url + '</a>';
         });
     }
 
-    
+
     #verticalLine(parent, node1, node2) {
         if (!node1 || !node2) {
             return;

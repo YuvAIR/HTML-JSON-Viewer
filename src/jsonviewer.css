@@ -107,19 +107,6 @@ button {
     color: var(--jsonviewer-link-color);
 }
 
-.json-viewer-container .nodeKey::before {
-    content: '';
-    width: 5%;
-    height: 100%;
-    position: absolute;
-    border-radius: inherit;
-    right: 5px;
-    top: 0;
-    background: linear-gradient(to right, transparent 0px, var(--jsonviewer-background-color));
-
-    pointer-events: none;
-}
-
 
 .json-viewer-container .nodeValue {
     max-width: var(--jsonviewer-max-value-width);
