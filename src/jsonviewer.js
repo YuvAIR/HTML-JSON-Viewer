@@ -230,6 +230,22 @@ $(document).on("keydown", ".json-viewer-container .json-viewer-search", function
     }
 });
 
+function parseString(string) {
+    if (typeof string !== "string") {
+        return string;
+    }
+
+    if (parseFloat(string).toString() === string) {
+        return parseFloat(string);
+    } else if (string === "true" || string === "false") {
+        return string === "true";
+    } else if (string === "null") {
+        return null;
+    } else if (string === "undefined") {
+        return undefined;
+    }
+    return string;
+}
 
 class JSONViewer {
     #verticalLines;
@@ -830,6 +846,16 @@ class JSONViewer {
         pointer[path[path.length - 1]] = value;
     }
 
+    static #getValueClass(value) {
+        value = parseString(value);
+        return JSONViewer.isHTML(value) ? "HTML" : typeof value;
+    }
+
+    static isHTML(str) {
+        var doc = new DOMParser().parseFromString(str, "text/html");
+        return Array.from(doc.body.childNodes).some(node => node.nodeType === 1);
+    }
+
     /**
      * @param {object} data
      * @param {HTMLElement} container
@@ -895,28 +921,14 @@ class JSONViewer {
 
                 let nodeValue = document.createElement("span");
                 nodeValue.classList.add("nodeValue");
-                nodeValue.classList.add(typeof data[key]);
+                const oldClass = JSONViewer.#getValueClass(data[key]);
+                nodeValue.classList.add(oldClass);
                 nodeValue.innerHTML = data[key];
                 JSONViewer.#maybeAsyncCallback([data[key], path.concat([key])], this.#valueMapCallback, (newval) => {
                     nodeValue.innerHTML = newval;
+                    nodeValue.classList.remove(oldClass);
+                    nodeValue.classList.add(JSONViewer.#getValueClass(newval));
                 });
-
-                function parseString(string) {
-                    if (typeof string !== "string") {
-                        return string;
-                    }
-
-                    if (parseFloat(string).toString() === string) {
-                        return parseFloat(string);
-                    } else if (string === "true" || string === "false") {
-                        return string === "true";
-                    } else if (string === "null") {
-                        return null;
-                    } else if (string === "undefined") {
-                        return undefined;
-                    }
-                    return string;
-                }
 
                 const jsonThis = this;
                 function editable() {
@@ -936,10 +948,10 @@ class JSONViewer {
                         const newPath = path.concat([key]);
 
                         const oldValue = JSONViewer.#getDeepValue(jsonThis.#tmpData, newPath);
-                        const currentValue = parseString(nodeValue.innerHTML);
+                        const currentValue = nodeValue.innerHTML;
 
-                        const oldType = typeof oldValue;
-                        const currentType = typeof currentValue;
+                        const oldType = JSONViewer.#getValueClass(oldValue);
+                        const currentType = JSONViewer.#getValueClass(currentValue);
 
                         if (oldType !== currentType) {
                             nodeValue.classList.toggle(oldType, false);
