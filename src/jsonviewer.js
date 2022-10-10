@@ -13,7 +13,7 @@ const InstantSearch = {
                 tokens = options[id.tokens],
                 allClassName = options[id.all][id.className],
                 allSensitiveSearch = options[id.all][id.sensitiveSearch];
-
+  
             function getTagPath(node) {
                 var path = [];
                 while (node.parentElement) {
@@ -22,7 +22,7 @@ const InstantSearch = {
                 }
                 return path;
             }
-
+  
             function checkAndReplace(node, tokenArr, classNameAll, sensitiveSearchAll) {
                 if (getTagPath(node).some((tag) => ["SCRIPT", "STYLE"].includes(tag))) return;
                 var nodeVal = node.nodeValue, parentNode = node.parentNode,
@@ -30,65 +30,65 @@ const InstantSearch = {
                     finalClassName, finalSensitiveSearch,
                     foundIndex, begin, matched, end,
                     textNode, span, isFirst;
-
+  
                 for (i = 0, j = tokenArr.length; i < j; i++) {
                     curToken = tokenArr[i];
                     myToken = curToken[id.token];
                     myClassName = curToken[id.className];
                     mySensitiveSearch = curToken[id.sensitiveSearch];
-
+  
                     finalClassName = (classNameAll ? myClassName + " " + classNameAll : myClassName);
-
+  
                     finalSensitiveSearch = (typeof sensitiveSearchAll !== "undefined" ? sensitiveSearchAll : mySensitiveSearch);
-
+  
                     isFirst = true;
                     while (true) {
                         if (finalSensitiveSearch)
                             foundIndex = nodeVal.indexOf(myToken);
                         else
                             foundIndex = nodeVal.toLowerCase().indexOf(myToken.toLowerCase());
-
+  
                         if (foundIndex < 0) {
                             if (isFirst)
                                 break;
-
+  
                             if (nodeVal) {
                                 textNode = document.createTextNode(nodeVal);
                                 parentNode.insertBefore(textNode, node);
                             } // End if (nodeVal)
-
+  
                             parentNode.removeChild(node);
                             break;
                         } // End if (foundIndex < 0)
-
+  
                         isFirst = false;
-
-
+  
+  
                         begin = nodeVal.substring(0, foundIndex);
                         matched = nodeVal.substr(foundIndex, myToken.length);
-
+  
                         if (begin) {
                             textNode = document.createTextNode(begin);
                             parentNode.insertBefore(textNode, node);
                         } // End if (begin)
-
+  
                         span = document.createElement("span");
                         span.className += finalClassName;
                         span.appendChild(document.createTextNode(matched));
                         parentNode.insertBefore(span, node);
-
+  
                         highlighted.push(parentNode);
-
+  
                         nodeVal = nodeVal.substring(foundIndex + myToken.length);
                     } // Whend
                 } // Next i 
             }; // End Function checkAndReplace 
-
+  
             function iterator(p) {
                 if (p === null) return;
-
+  
                 var children = Array.prototype.slice.call(p.childNodes), i, cur;
-
+  
                 if (children.length) {
                     for (i = 0; i < children.length; i++) {
                         cur = children[i];
@@ -100,15 +100,15 @@ const InstantSearch = {
                     }
                 }
             }; // End Function iterator
-
+  
             iterator(options[id.container]);
             return highlighted;
         }; // End Function highlighter
-
+  
         if (!Array.isArray(highlightText)) {
             highlightText = [highlightText];
         }
-
+  
         return internalHighlighter(
             {
                 container: container,
@@ -126,11 +126,11 @@ const InstantSearch = {
             }
         ); // End Call internalHighlighter 
     } // End Function highlight
-};
-
-// Requires jQuery and Water CSS is recommended, will look terrible otherwise
-
-window.addEventListener("load", () => {
+  };
+  
+  // Requires jQuery and Water CSS is recommended, will look terrible otherwise
+  
+  window.addEventListener("load", () => {
     var r = $(':root');
     var waterCSSTheme = r.css('--background-body');
     if (waterCSSTheme && waterCSSTheme.trim() === "#fff") { // light theme
@@ -150,18 +150,18 @@ window.addEventListener("load", () => {
         r.css('--jsonviewer-arrow-hover', '0.825');
         r.css('--jsonviewer-highlight-color', '#896700');
     }
-});
-
-// fix contenteditable focus on any click
-var fakeBlur = false;
-if (/AppleWebKit\/([\d.]+)/.exec(navigator.userAgent)) {
+  });
+  
+  // fix contenteditable focus on any click
+  var fakeBlur = false;
+  if (/AppleWebKit\/([\d.]+)/.exec(navigator.userAgent)) {
     document.addEventListener('DOMContentLoaded', function () {
         var fixEl = document.createElement('input');
         fixEl.style.cssText = 'width:1px;height:1px;border:none;margin:0;padding:0; position:fixed; top:0; left:0';
         fixEl.tabIndex = -1;
-
+  
         var shouldNotFocus = null;
-
+  
         function checkMouseEvent(e) {
             if (e.target.isContentEditable) return;
             var range = document.caretRangeFromPoint(e.clientX, e.clientY);
@@ -180,7 +180,7 @@ if (/AppleWebKit\/([\d.]+)/.exec(navigator.userAgent)) {
         document.addEventListener('mouseup', function () {
             document.removeEventListener('mousemove', checkMouseEvent, false);
         }, false);
-
+  
         document.addEventListener('focus', function (e) {
             if (e.target !== shouldNotFocus) return;
             if (!e.target.isContentEditable) return;
@@ -193,10 +193,10 @@ if (/AppleWebKit\/([\d.]+)/.exec(navigator.userAgent)) {
             fixEl.setSelectionRange(0, 0);
             document.body.removeChild(fixEl);
         }, true);
-
+  
     });
-}
-function getContentEditableRoot(el) {
+  }
+  function getContentEditableRoot(el) {
     if (el.nodeType === 3) el = el.parentNode;
     if (!el.isContentEditable) return false;
     while (el) {
@@ -207,31 +207,31 @@ function getContentEditableRoot(el) {
         }
         return el;
     }
-}
-
-$(document).on("keydown", ".json-viewer-container", function (e) {
+  }
+  
+  $(document).on("keydown", ".json-viewer-container", function (e) {
     if (e.ctrlKey && e.key === "f") {
         e.preventDefault();
-
+  
         JSONViewer.getInstanceByContainer(this).toggleSearch();
     }
-})
-
-$(document).on("keydown", ".json-viewer-container .json-viewer-search input", function (e) {
+  })
+  
+  $(document).on("keydown", ".json-viewer-container .json-viewer-search input", function (e) {
     if (!e.ctrlKey && !e.shiftKey && e.key === "Enter") {
         e.preventDefault();
         e.target.parentElement.getElementsByClassName("json-viewer-filter-button")[0].click();
     }
-});
-
-$(document).on("keydown", ".json-viewer-container .json-viewer-search", function (e) {
+  });
+  
+  $(document).on("keydown", ".json-viewer-container .json-viewer-search", function (e) {
     if (!e.ctrlKey && !e.shiftKey && e.key === "Escape") {
         JSONViewer.getInstanceByContainer(this.parentElement).toggleSearch("hide");
     }
-});
-
-
-class JSONViewer {
+  });
+  
+  
+  class JSONViewer {
     #verticalLines;
     #topVerticalLines;
     #shown;
@@ -243,6 +243,7 @@ class JSONViewer {
     #options;
     #defaultDepth;
     #advancedSearch = false;
+    #elementAfterNode;
     #keyMapCallback;
     #valueMapCallback;
     #expandAll;
@@ -254,7 +255,7 @@ class JSONViewer {
     static #instances = {};
     static #arrow_right = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAGxJREFUSEtjZKAxYKSx+QyjFhAM4ZEVRA4MDAwHCIYJmgJSgmg/AwNDI6mWkGqBKQMDgw8plpBqASiYvpJiCTkWgEKZaEsGpQVEux7kVVJ9QPNIpmkypXlGIzUTg9WTEgejFpAVAgQ1Df04AABMSBYZWnttmAAAAABJRU5ErkJggg==";
     static #play_circle = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAXpJREFUSEu1lX9RxEAMhd854ByAAkDBgQLAATjAAXdSUAAoAAmgAE4BoADmY5JOSH+knU73z+5uvpeXNLvSwmu1cHyNBRxKOpZ0YoJeJb1J+qgEVoBLSXchcI4HaCfpsQ/UBziQ9CDpzJQS4EUSAVlkwh4CyIy9K0lfGdQFIPizBUHdtrCBfbIEfp4hXQDUbCSdBsWV1WRCxtwF0qwM8INjlGeoZ4JVTU0yIHocA+D3hRW05XM4yP0fy/7vcwTQiu8WJPsOgLrQljdmRZdtnsWRt3AEuD14iJc5AwC+sABQzsaFNDZFgNPXAxcjlOBA4j9AB35GF+YAviVdTwFMsehe0u1Ui8YUeW+qc43cusEic6jVZnbTxwIBqjb1UdJqUz4s/qMBmTMqnkxk76hgg1YDwpTEEsbG0HLfeR+w8p+FQ+Oa/mboURcf1wRhAfe6MLpRTsuOGtdRLTVBIQG7FkD2Jz84ORgtjNL4ZJLZ7CezsL/ert7kOkJx4hdvXWgZmZakXgAAAABJRU5ErkJggg==";
-
+  
     /**
      * Returns the JSONViewer object for the given container - note that the container IDs must be unique.
      * @param {HTMLElement|jQuery} container
@@ -264,14 +265,14 @@ class JSONViewer {
         container = $(container)[0];
         return JSONViewer.#instances[container.id];
     }
-
+  
     /**
      * @returns {HTMLElement}
      */
     get container() {
         return $(this.#container)[0];
     }
-
+  
     /**
      * Get original data or the last data that was used in an `updateTree` call, with `keepOldData` set to false.
      * Note that queries call `updateTree` with `keepOldData` set to true, so this will return the original data even if a query is active.
@@ -280,7 +281,7 @@ class JSONViewer {
     get data() {
         return this.#data;
     }
-
+  
     /**
      * Get the currently displayed data.
      * @returns {object}
@@ -288,7 +289,7 @@ class JSONViewer {
     get currentData() {
         return this.#currentData;
     }
-
+  
     /**
      * @callback nodeCallback
      * @param {string} nodeName
@@ -332,8 +333,17 @@ class JSONViewer {
      * @return {string|Promise<string>} - value to be set in the node element (usually the same as `newValue`)
      */
     /**
+     * @callback elementAfterNodeCallback
+     * @param {string} nodeName
+     * @param {object} nodeValue
+     * @param {string} nodePath - ["path", "to", "node"] => data[path][to][nodeName] == nodeValue
+     * @param {HTMLElement} nodeElement - node DOM element on the tree
+     * @return {undefined|string|Promise<string>} - HTML string to be appended after the node element (as a child of `.nodeBody`)
+     */
+    /**
      * @typedef {object} JSONViewerOptions
      * @property {nodeCallback} nodeClickCallback - callback function to be called when a node (key) is clicked
+     * @property {elementAfterNodeCallback} elementAfterNode - every node in the tree is passed to this callback, and the returned HTML string is appended after the node value element (as a child of `.nodeBody`). `undefined` is ignored.
      * @property {keyCallback} keyMapCallback - every key in the tree is passed to this callback, which returns an html string to replace the key element. default: keep the key as is.
      * @property {valueCallback} valueMapCallback - every terminal value in the tree is passed to this callback, which returns an html string to replace the value element. default: JSONViewer.linkify
      * @property {string} maxKeyWidth - max width of a key node (css string), overflow will be hidden. default: "100%"
@@ -362,11 +372,11 @@ class JSONViewer {
         this.#tmpData = structuredClone(data);
         this.#currentData = data;
         this.#options = options ? options : {};
-
+  
         JSONViewer.#instances[$(container)[0].id] = this;
-
+  
         this.updateOptions(options, false);
-
+  
         this.#container.addClass("json-viewer-container");
         this.#container.attr("tabindex", "0");
         (this.#container.attr("id") === undefined) && this.#container.attr("id", "json-viewer-" + JSONViewer.#instances.length);
@@ -377,7 +387,7 @@ class JSONViewer {
             }
         </style>
         `);
-
+  
         var search = $("<div class='json-viewer-search hidden' tabindex='0'></div>");
         search.append($("<button class='json-viewer-close-search'>&times;</button>").click(this.toggleSearch.bind(this, "hide")));
         search.append($("<input type='text' placeholder='Query' title='Filter query.'></input>"));
@@ -386,7 +396,7 @@ class JSONViewer {
                 e.target.value = (e.target.valueAsNumber || 0);
             }
         }));
-
+  
         var jsonThis = this;
         function advancedChange(target) {
             target = $(target)[0];
@@ -409,14 +419,14 @@ class JSONViewer {
                 target.parentElement.children[2].value = "" + jsonThis.#defaultDepth;
             }
         }
-
+  
         search.append($(`<input type='checkbox' name='advanced' title='Filter by specific paths and rules' ${this.#advancedSearch ? 'checked' : ''}></input>`).change((e) => {
             advancedChange(e.target);
         }));
         search.append($("<label for='advanced'>Advanced filter</label>"));
-
+  
         search.append($("<br>"));
-
+  
         search.append($("<button class='json-viewer-filter-button' title='Ctrl+F'>&#128269;</button>").click((e) => {
             if (e.target.parentElement.classList.contains("hidden")) {
                 this.toggleSearch("show");
@@ -428,19 +438,19 @@ class JSONViewer {
         search.append($("<button class='json-viewer-help-button' title='Help'>?</button>").click((e) => {
             window.open("https://github.com/YuvAIR/HTML-JSON-Viewer/blob/main/FILTER.md", "_blank");
         }));
-
+  
         this.#container.append(search);
-
+  
         advancedChange(search.find("input[type='checkbox']"));
-
+  
         if (this.#options.maxKeyWidth) {
             this.#container.css("--jsonviewer-max-key-width", this.#options.maxKeyWidth);
         }
         if (this.#options.maxValueWidth) {
             this.#container.css("--jsonviewer-max-value-width", this.#options.maxValueWidth);
         }
-
-
+  
+  
         var nodeClickCallback = this.#options.nodeClickCallback;
         this.#container.on("click", ".nodeKey", function () {
             if (!nodeClickCallback) {
@@ -455,22 +465,23 @@ class JSONViewer {
             }
             nodeClickCallback(name, value, path, node);
         });
-
+  
         this.#container.on("click", ".arrow", function () {
             jsonThis.expandCollapse(JSONViewer.getNodePath($(this).parent().parent().parent()));
         });
-
+  
         var treeContainer = $("<div class='json-viewer-tree-container'></div>");
         this.#container.append(treeContainer);
         this.#createTree(data, treeContainer);
         treeContainer.parent().focus();
     }
-
+  
     updateOptions(options, updateTree=true) {
         this.#options = {...this.#options, ...options};
-
+  
         this.#defaultDepth = this.#options.defaultDepth ? this.#options.defaultDepth : 1;
         this.#advancedSearch = this.#options.defaultAdvanced ? this.#options.defaultAdvanced : false;
+        this.#elementAfterNode = this.#options.elementAfterNode ? this.#options.elementAfterNode : () => { return undefined; };
         this.#keyMapCallback = this.#options.keyMapCallback ? this.#options.keyMapCallback : (key) => { return key; };
         this.#valueMapCallback = this.#options.valueMapCallback ? this.#options.valueMapCallback : JSONViewer.linkify;
         this.#allowEdit = this.#options.allowEdit ? this.#options.allowEdit : () => { return false; };
@@ -479,10 +490,10 @@ class JSONViewer {
         this.#editBlurOnEnter = this.#options.editBlurOnEnter ? this.#options.editBlurOnEnter : true;
         this.#expandAll = this.#options.expandAll ? this.#options.expandAll : false;
         this.#showLines = this.#options.showLines ? this.#options.showLines : false;
-
+  
         updateTree && this.updateTree(this.#currentData, true);
     }
-
+  
     toggleSearch(action="toggle") {
         var search = this.#container.find(".json-viewer-search")[0];
         switch (action) {
@@ -496,7 +507,7 @@ class JSONViewer {
                 search.classList.add("hidden");
                 break;
         }
-
+  
         if (search.classList.contains("hidden")) {
             this.#shown = structuredClone(this.#preQueryShown);
             search.getElementsByClassName("json-viewer-filter-button")[0].title = "Ctrl+F";
@@ -508,9 +519,9 @@ class JSONViewer {
             search.getElementsByTagName("input")[0].focus();
         }
     }
-
-
-
+  
+  
+  
     /**
      * Check if the node at the given path is expanded.
      * @param {string[]} path
@@ -585,9 +596,9 @@ class JSONViewer {
             jsonThis.collapse(JSONViewer.getNodePath($(this)));
         });
     }
-
-
-
+  
+  
+  
     /**
      * Filters the tree to show only nodes at a given depth which match the query.
      * @param {string} q
@@ -598,8 +609,8 @@ class JSONViewer {
         q = q.toString();
         advanced = advanced === null ? this.#advancedSearch : advanced;
         !advanced && (depth = parseInt(depth));
-
-
+  
+  
         var new_data;
         var highlight;
         if (advanced === true) {
@@ -616,7 +627,7 @@ class JSONViewer {
             highlight = q;
         }
         await this.updateTree(new_data, true);
-
+  
         if (highlight) {
             const res = InstantSearch.highlight(this.container.querySelector(".json-viewer-tree-container"), highlight);
             for (const elem of res) {
@@ -627,7 +638,7 @@ class JSONViewer {
             }
         }
     }
-
+  
     static #queryRec(q, depth, data) {
         var new_data = {};
         for (const key in data) {
@@ -643,7 +654,7 @@ class JSONViewer {
         }
         return new_data;
     }
-
+  
     static #advancedQueryRec(path, query, data) {
         var expression = esprima.parse(query).body[0].expression;
         function evaluate(path, expr, target, isFunc = false, isFirstInMember = true) {
@@ -676,13 +687,13 @@ class JSONViewer {
                                 object = Object.values(object);
                                 property = "includes";
                                 break;
-
+  
                             case "keys":
                                 return () => Object.keys(object);
-
+  
                             case "values":
                                 return () => Object.values(object);
-
+  
                             case "len":
                             case "length":
                                 return () => Object.keys(object).length;
@@ -708,7 +719,7 @@ class JSONViewer {
                     return target;
             }
         }
-
+  
         var new_data = {};
         function rec(data, path, depth = 0, pathToHere = []) {
             if (path.length > depth && path[depth] == "*") {
@@ -722,7 +733,7 @@ class JSONViewer {
                 try {
                     res = evaluate(pathToHere, expression, data);
                 } catch (e) { }
-
+  
                 if (res) {
                     var pointer = new_data;
                     for (var i = 0; i < pathToHere.length - 1; i++) {
@@ -732,21 +743,21 @@ class JSONViewer {
                         pointer = pointer[pathToHere[i]];
                     }
                     pointer[pathToHere[pathToHere.length - 1]] = data;
-
+  
                 }
             }
         }
-
+  
         rec(data, path);
-
+  
         var strings = JSONViewer.#getAllStrings(expression);
-
+  
         return {
             strings: strings,
             data: new_data
         };
     }
-
+  
     static #getAllStrings(expr) {
         var strings = [];
         for (const key in expr) {
@@ -758,8 +769,8 @@ class JSONViewer {
         }
         return strings;
     }
-
-
+  
+  
     /**
      * Update the tree using new data
      * @param {object|string} data
@@ -777,7 +788,7 @@ class JSONViewer {
         this.#container.find(".json-viewer-tree-container").empty();
         await this.#createTree(data, this.#container.find(".json-viewer-tree-container"));
     }
-
+  
     /**
      * Calls `func` with args, if `func` is async, wait for result and pass to `callback`, otherwise just pass the return value to `callback`.
      * @param {object[]} args
@@ -795,7 +806,7 @@ class JSONViewer {
             callback(res);
         }
     }
-
+  
     /**
      * If path is `[a, b, c]`, returns `data[a][b][c]`
      * @param {object} data
@@ -812,7 +823,7 @@ class JSONViewer {
         }
         return pointer;
     }
-
+  
     /**
      * If path is `[a, b, c]`, sets `data[a][b][c]` to `value`
      * @param {object} data
@@ -829,14 +840,14 @@ class JSONViewer {
         }
         pointer[path[path.length - 1]] = value;
     }
-
+  
     /**
      * @param {object} data
      * @param {HTMLElement} container
      */
     async #createTree(data, current_node, first = true, path = []) {
         current_node = $(current_node)[0];
-
+  
         var nodes = []
         var firstCond = first && Object.keys(data).length == 1;
         for (let key in data) {
@@ -845,54 +856,54 @@ class JSONViewer {
             firstCond && node.classList.add("root");
             node.dataset.path = path.concat(key).join("/");
             node.dataset.key = JSON.stringify(key);
-
+  
             let nodeBody = document.createElement("div");
             nodeBody.classList.add("nodeBody");
             firstCond && nodeBody.classList.add("root");
             let arrowDiv = document.createElement("div");
             arrowDiv.classList.add("arrowDiv");
-
+  
             if (!firstCond) {
                 var arrow = document.createElement("img");
                 arrow.classList.add("arrow");
                 arrow.src = JSONViewer.#play_circle;
-
+  
                 arrowDiv.appendChild(arrow);
-
+  
                 nodeBody.appendChild(arrowDiv);
             }
-
+  
             let nodeKey = document.createElement("span");
             nodeKey.classList.add("nodeKey");
             nodeKey.innerHTML = key;
             JSONViewer.#maybeAsyncCallback([key, data[key], path.concat(key)], this.#keyMapCallback, (newkey) => {
                 nodeKey.innerHTML = newkey;
             });
-
+  
             nodeBody.appendChild(nodeKey);
-
+  
             node.appendChild(nodeBody);
-
-
+  
+  
             current_node.appendChild(node);
-
+  
             let nodePath = JSONViewer.getNodePath(node).join("/");
             if (this.#expandAll) {
                 this.#shown.push(nodePath);
             }
-
+  
             let isHidden = this.#shown.indexOf(nodePath) == -1;
             isHidden && firstCond && this.#shown.push(nodePath);
             isHidden && !firstCond && node.classList.add("hidden");
             !isHidden && arrow && (arrow.src = JSONViewer.#arrow_right);
-
+  
             if (typeof data[key] === "object") {
                 await this.#createTree(data[key], node, false, path.concat([key]));
             } else {
                 arrow && arrow.remove();
                 arrowDiv.classList.add("lastArrowDiv")
                 nodeKey.classList.add("lastNodeKey");
-
+  
                 let nodeValue = document.createElement("span");
                 nodeValue.classList.add("nodeValue");
                 nodeValue.classList.add(typeof data[key]);
@@ -900,12 +911,12 @@ class JSONViewer {
                 JSONViewer.#maybeAsyncCallback([data[key], path.concat([key])], this.#valueMapCallback, (newval) => {
                     nodeValue.innerHTML = newval;
                 });
-
+  
                 function parseString(string) {
                     if (typeof string !== "string") {
                         return string;
                     }
-
+  
                     if (parseFloat(string).toString() === string) {
                         return parseFloat(string);
                     } else if (string === "true" || string === "false") {
@@ -917,12 +928,12 @@ class JSONViewer {
                     }
                     return string;
                 }
-
+  
                 const jsonThis = this;
                 function editable() {
                     nodeValue.contentEditable = true;
                     nodeValue.classList.add("editable");
-
+  
                     nodeValue.onkeydown = function (e) {
                         if (e.key === "Enter" && jsonThis.#editBlurOnEnter) {
                             nodeValue.blur();
@@ -931,21 +942,21 @@ class JSONViewer {
                             nodeValue.blur();
                         }
                     };
-
+  
                     nodeValue.addEventListener("input", () => {
                         const newPath = path.concat([key]);
-
+  
                         const oldValue = JSONViewer.#getDeepValue(jsonThis.#tmpData, newPath);
                         const currentValue = parseString(nodeValue.innerHTML);
-
+  
                         const oldType = typeof oldValue;
                         const currentType = typeof currentValue;
-
+  
                         if (oldType !== currentType) {
                             nodeValue.classList.toggle(oldType, false);
                             nodeValue.classList.toggle(currentType, true);
                         }
-
+  
                         JSONViewer.#maybeAsyncCallback([key, oldValue, currentValue, newPath], jsonThis.#editOnChange, (newVal) => {
                             if (newVal != currentValue) {
                                 nodeValue.innerHTML = newVal;
@@ -954,11 +965,11 @@ class JSONViewer {
                             JSONViewer.#setDeepValue(jsonThis.#tmpData, newPath, newVal);
                         });
                     });
-
+  
                     nodeValue.onblur = () => {
                         if (!fakeBlur) {
                             const newPath = path.concat([key]);
-                            const currentValue = nodeValue.innerHTML;
+                            const currentValue = parseString(nodeValue.innerHTML);
                             JSONViewer.#maybeAsyncCallback([key, currentValue, newPath], jsonThis.#editOnBlur, (newval) => {
                                 nodeValue.innerHTML = newval;
                                 nodeValue.blur();
@@ -969,17 +980,24 @@ class JSONViewer {
                         }
                     };
                 }
-
+  
                 JSONViewer.#maybeAsyncCallback([key, data[key], path.concat([key])], this.#allowEdit, (allow) => {
                     allow && editable();
                 });
-
-
+  
+  
                 nodeBody.appendChild(nodeValue);
+            }
+            if (typeof this.#elementAfterNode === "function") {
+                JSONViewer.#maybeAsyncCallback([key, data[key], path.concat(key)], this.#elementAfterNode, (element) => {
+                    if (element !== undefined) {
+                        nodeBody.insertAdjacentHTML("beforeend", element);
+                    }
+                });
             }
             nodes.push(node);
         }
-
+  
         if (this.#showLines) {
             for (var i = 0; i < nodes.length; i++) {
                 if (i < nodes.length - 1) {
@@ -991,7 +1009,7 @@ class JSONViewer {
             }
         }
     }
-
+  
     /**
      * Get the path of the node in the tree as an array
      * @param {HTMLElement} node 
@@ -1000,7 +1018,7 @@ class JSONViewer {
     static getNodePath(node) {
         return $(node).attr("data-path").split("/");
     }
-
+  
     static linkify(text) {
         if (typeof text !== "string") {
             return text;
@@ -1010,82 +1028,82 @@ class JSONViewer {
             return '<a href="' + url + '" target="_blank">' + url + '</a>';
         });
     }
-
-
+  
+  
     #verticalLine(parent, node1, node2) {
         if (!node1 || !node2) {
             return;
         }
-
+  
         var line = document.createElement("div");
         line.classList.add("verticalLine");
         parent.appendChild(line);
-
+  
         this.#updateVerticalLine(parent, node1, node2, line);
         this.#verticalLines.push([parent, node1, node2, line]);
     }
-
+  
     #updateVerticalLine(parent, node1, node2, line) {
         node1 = node1.getElementsByClassName("arrowDiv")[0];
         node2 = node2.getElementsByClassName("arrowDiv")[0];
-
+  
         if (!node1 || !node2) {
             return;
         }
-
+  
         var node1Offset = node1.getBoundingClientRect();
         var node2Offset = node2.getBoundingClientRect();
         var parentOffset = parent.getBoundingClientRect();
-
+  
         line.style.top = node1Offset.top + node1Offset.height - parentOffset.top + "px";
         line.style.left = node1Offset.left + 9 - parentOffset.left + "px";
         line.style.height = node2Offset.top - node1Offset.top - node1Offset.height + "px";
     }
-
+  
     #updateVerticalLines() {
         for (var data of this.#verticalLines) {
             this.#updateVerticalLine(...data);
         }
     }
-
-
+  
+  
     #topVerticalLine(parent, node) {
         if (!node) {
             return;
         }
-
+  
         var line = document.createElement("div");
         line.classList.add("verticalLine");
         parent.appendChild(line);
-
+  
         this.#updateTopVerticalLine(parent, node, line);
         this.#topVerticalLines.push([parent, node, line]);
     }
-
+  
     #updateTopVerticalLine(parent, node, line) {
         var node = node.getElementsByClassName("arrowDiv")[0];
         if (!node) {
             return;
         }
-
+  
         var nodeOffset = node.getBoundingClientRect();
         var nodeBodyOffset = parent.getElementsByClassName("nodeBody")[0].getBoundingClientRect();
         var parentOffset = parent.getBoundingClientRect();
-
+  
         line.style.left = nodeOffset.left + 9 - parentOffset.left + "px";
         line.style.top = nodeBodyOffset.top + nodeBodyOffset.height - parentOffset.top + "px";
         line.style.height = nodeOffset.top - nodeBodyOffset.top - nodeBodyOffset.height + "px";
     }
-
+  
     #updateTopVerticalLines() {
         for (var data of this.#topVerticalLines) {
             this.#updateTopVerticalLine(...data);
         }
     }
-
+  
     #updateLines() {
         this.#updateVerticalLines();
         this.#updateTopVerticalLines();
     }
-
-}
+  
+  }
