@@ -10,20 +10,22 @@
     <body>
         <div id="container" style="height: calc(100vh - 120px);"></div>
         <script>
+            const valueMapCallback = (value, path) => {
+                return JSONViewer.linkify(value);
+                // return new Promise(function (resolve, reject) {
+                //     setTimeout(function () {
+                //         resolve(`<a href="https://www.google.com/search?q=${value}">${value}</a>`);
+                //     }, 1000);
+                // });
+            }
+
             var jsonviewer = new JSONViewer({"example": {"a": {"x": 1, "y":2, "z":3}, "b": {"x": 4, "y": 5, "z": 6}}}, document.getElementById("container"), {
                 nodeClickCallback: console.log,
                 keyMapCallback: function (key, value, path) {
                     return `<button onclick='alert(\`${key} at [${path}] with value: ${JSON.stringify(value)}\`)' style="margin: 0px; padding: 10px;">${key}</button>`;
                 },
-                valueMapCallback: function (value, path) {
-                    return JSONViewer.linkify(value);
-                    // return new Promise(function (resolve, reject) {
-                    //     setTimeout(function () {
-                    //         resolve(`<a href="https://www.google.com/search?q=${value}">${value}</a>`);
-                    //     }, 1000);
-                    // });
-                },
-                allowEdit: () => {return true;},
+                valueMapCallback: valueMapCallback,
+                allowEdit: (name, val, path) => {return !JSONViewer.isHTML(valueMapCallback(val))},
                 editOnChange: (name, prevVal, newVal, path) => {
                     console.log(`${name} changed from ${prevVal} to ${newVal} at [${path}]`);
                     return newVal;

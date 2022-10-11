@@ -228,10 +228,26 @@ const InstantSearch = {
     if (!e.ctrlKey && !e.shiftKey && e.key === "Escape") {
         JSONViewer.getInstanceByContainer(this.parentElement).toggleSearch("hide");
     }
-  });
-  
-  
-  class JSONViewer {
+});
+
+function parseString(string) {
+    if (typeof string !== "string") {
+        return string;
+    }
+
+    if (parseFloat(string).toString() === string) {
+        return parseFloat(string);
+    } else if (string === "true" || string === "false") {
+        return string === "true";
+    } else if (string === "null") {
+        return null;
+    } else if (string === "undefined") {
+        return undefined;
+    }
+    return string;
+}
+
+class JSONViewer {
     #verticalLines;
     #topVerticalLines;
     #shown;
@@ -474,6 +490,12 @@ const InstantSearch = {
         this.#container.append(treeContainer);
         this.#createTree(data, treeContainer);
         treeContainer.parent().focus();
+    }
+
+    destroy() {
+        this.#container.empty();
+        this.#container.removeClass("json-viewer-container");
+        delete JSONViewer.#instances[this.#container[0].id];
     }
   
     updateOptions(options, updateTree=true) {
@@ -785,8 +807,13 @@ const InstantSearch = {
         if (!keepOldData) {
             this.#data = data;
         }
-        this.#container.find(".json-viewer-tree-container").empty();
-        await this.#createTree(data, this.#container.find(".json-viewer-tree-container"));
+        let treeContainer = this.#container.find(".json-viewer-tree-container");
+        if (treeContainer.length === 0) {
+            this.#container.append($("<div class='json-viewer-tree-container'></div>"));
+            treeContainer = this.#container.find(".json-viewer-tree-container");
+        }
+        treeContainer.empty();
+        await this.#createTree(data, treeContainer);
     }
   
     /**
@@ -840,7 +867,20 @@ const InstantSearch = {
         }
         pointer[path[path.length - 1]] = value;
     }
-  
+
+    static #getValueClass(value) {
+        value = parseString(value);
+        if (value === null) {
+            return "null";
+        }
+        return JSONViewer.isHTML(value) ? "HTML" : typeof value;
+    }
+
+    static isHTML(str) {
+        var doc = new DOMParser().parseFromString(str, "text/html");
+        return Array.from(doc.body.childNodes).some(node => node.nodeType === 1);
+    }
+
     /**
      * @param {object} data
      * @param {HTMLElement} container
@@ -850,7 +890,7 @@ const InstantSearch = {
   
         var nodes = []
         var firstCond = first && Object.keys(data).length == 1;
-        for (let key in data) {
+        for (let key of Object.keys(data).sort()) { // TODO: let the user pick the sorting.
             let node = document.createElement("div");
             node.classList.add("node");
             firstCond && node.classList.add("root");
@@ -897,38 +937,27 @@ const InstantSearch = {
             isHidden && !firstCond && node.classList.add("hidden");
             !isHidden && arrow && (arrow.src = JSONViewer.#arrow_right);
   
-            if (typeof data[key] === "object") {
+            if (typeof data[key] === "object" && data[key] !== null) {
                 await this.#createTree(data[key], node, false, path.concat([key]));
             } else {
+                if (data[key] === null) {
+                    data[key] = "null";
+                }
                 arrow && arrow.remove();
                 arrowDiv.classList.add("lastArrowDiv")
                 nodeKey.classList.add("lastNodeKey");
   
                 let nodeValue = document.createElement("span");
                 nodeValue.classList.add("nodeValue");
-                nodeValue.classList.add(typeof data[key]);
+                const oldClass = JSONViewer.#getValueClass(data[key]);
+                nodeValue.classList.add(oldClass);
                 nodeValue.innerHTML = data[key];
                 JSONViewer.#maybeAsyncCallback([data[key], path.concat([key])], this.#valueMapCallback, (newval) => {
                     nodeValue.innerHTML = newval;
+                    nodeValue.classList.remove(oldClass);
+                    nodeValue.classList.add(JSONViewer.#getValueClass(newval));
                 });
-  
-                function parseString(string) {
-                    if (typeof string !== "string") {
-                        return string;
-                    }
-  
-                    if (parseFloat(string).toString() === string) {
-                        return parseFloat(string);
-                    } else if (string === "true" || string === "false") {
-                        return string === "true";
-                    } else if (string === "null") {
-                        return null;
-                    } else if (string === "undefined") {
-                        return undefined;
-                    }
-                    return string;
-                }
-  
+
                 const jsonThis = this;
                 function editable() {
                     nodeValue.contentEditable = true;
@@ -948,10 +977,10 @@ const InstantSearch = {
   
                         const oldValue = JSONViewer.#getDeepValue(jsonThis.#tmpData, newPath);
                         const currentValue = parseString(nodeValue.innerHTML);
-  
-                        const oldType = typeof oldValue;
-                        const currentType = typeof currentValue;
-  
+
+                        const oldType = JSONViewer.#getValueClass(oldValue);
+                        const currentType = JSONViewer.#getValueClass(currentValue);
+
                         if (oldType !== currentType) {
                             nodeValue.classList.toggle(oldType, false);
                             nodeValue.classList.toggle(currentType, true);
@@ -1094,7 +1123,7 @@ const InstantSearch = {
         line.style.top = nodeBodyOffset.top + nodeBodyOffset.height - parentOffset.top + "px";
         line.style.height = nodeOffset.top - nodeBodyOffset.top - nodeBodyOffset.height + "px";
     }
-  
+
     #updateTopVerticalLines() {
         for (var data of this.#topVerticalLines) {
             this.#updateTopVerticalLine(...data);
